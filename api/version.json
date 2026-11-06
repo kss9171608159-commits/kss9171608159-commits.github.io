@@ -1,0 +1,9 @@
+{
+  "version": "1.0.5",
+  "installer": "KartEdit_Setup_1.0.5.exe",
+  "kind": "installer",
+  "sha256": "F0C28C0A07D49D75C214BA2C0E96CC2A526AF578AFCE2099CC081F7DCF83906D",
+  "size": 31742127,
+  "released": "2026-10-17",
+  "notes": "Релиз 1.0.5: стабильная версия"
+}

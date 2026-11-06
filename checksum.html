@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>КартЭдит — проверка установщика</title>
+<style>
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#1d2733; background:#f6f8fa; line-height:1.5; }
+  .wrap { max-width:760px; margin:40px auto; padding:32px 24px 60px; background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+  h1 { font-size:22px; color:#111827; margin-top:12px; }
+  p, li { font-size:15px; line-height:1.6; }
+  code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:14px; word-break:break-all; background:#f1f4f8; padding:3px 6px; border-radius:4px; }
+  .hash-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin:14px 0; }
+  .hash-code { font-size:15px; color:#0f172a; font-weight:600; display:inline-block; margin-top:6px; letter-spacing:0.02em; }
+  .muted { color:#5b6776; font-size:13px; }
+  a { color:#1a73e8; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .back { font-size:14px; font-weight:500; }
+  ol { padding-left:22px; }
+  li { margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="back"><a href="/">&larr; На главную</a></p>
+  <h1>Проверка подлинности установщика</h1>
+  <p><b>Обычно это не нужно.</b> Если вы скачали программу кнопкой «Скачать» на этом сайте — просто установите её. Проверка пригодится, если файл пришёл другим путём (от коллеги, по почте, на флешке) или сверку требует служба безопасности вашей организации.</p>
+  <p>У каждого файла есть «отпечаток» — строка из 64 букв и цифр. Если в файле изменился хоть один байт (повредился при скачивании, кто-то подменил его или дописал вирус), отпечаток станет другим. Отпечаток нашего установщика:</p>
+  
+  <div class="hash-box">
+    Файл: <b>KartEdit_Setup_1.0.5.exe</b> (версия 1.0.5, 31 742 127 байт, выпущен 2026-10-17)<br>
+    <code class="hash-code">F0C28C0A07D49D75C214BA2C0E96CC2A526AF578AFCE2099CC081F7DCF83906D</code>
+  </div>
+
+  <p><b>Как сверить</b> (Windows, 1 минута):</p>
+  <ol>
+    <li>Откройте папку, где лежит установщик (обычно «Загрузки»).</li>
+    <li>В пустом месте папки зажмите <b>Shift</b>, нажмите правую кнопку мыши и выберите <b>«Открыть окно PowerShell здесь»</b> (или «Открыть в терминале»).</li>
+    <li>Вставьте и выполните команду:<br>
+      <code>Get-FileHash .\KartEdit_Setup_1.0.5.exe -Algorithm SHA256</code><br>
+      <span class="muted">(в старой командной строке cmd: <code>certutil -hashfile KartEdit_Setup_1.0.5.exe SHA256</code>)</span>.
+    </li>
+    <li>Сравните строку из ответа с отпечатком выше. Большие или маленькие буквы — не важно. Совпало — файл настоящий. Не совпало хоть в одном знаке — не запускайте его и напишите нам: <a href="mailto:support@kartedit.ru">support@kartedit.ru</a>.</li>
+  </ol>
+
+  <p class="muted">Для программ и служб безопасности тот же отпечаток (алгоритм SHA-256): <a href="/checksum.txt">/checksum.txt</a> и <a href="/api/version">/api/version</a>. Страница собирается из описания официального дистрибутива, по которому отдаётся файл.</p>
+</div>
+</body>
+</html>

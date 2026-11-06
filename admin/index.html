@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>КартЭдит — панель управления</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --acc:#1a73e8; --bg:#f6f8fa; --tx:#1b2430; --ok:#1e8e3e; --bad:#c62828; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; color:var(--tx); background:var(--bg); }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 20px 60px; }
+  h1 { font-size:1.4rem; margin:8px 0 20px; }
+  h2 { font-size:1.05rem; margin:0 0 12px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  @media (max-width:800px){ .grid { grid-template-columns:1fr; } }
+  .card { background:#fff; border:1px solid #e3e8ee; border-radius:12px; padding:18px; }
+  .full { grid-column:1/-1; }
+  label { display:block; margin:10px 0 4px; font-size:.88rem; font-weight:600; }
+  input { width:100%; padding:8px 10px; font-size:1rem; border:1px solid #c8d0da; border-radius:8px; }
+  button { padding:9px 16px; font-size:.95rem; font-weight:600; color:#fff;
+           background:var(--acc); border:0; border-radius:8px; cursor:pointer; margin-top:12px; }
+  button.small { padding:4px 10px; font-size:.82rem; margin:0; }
+  button:disabled { background:#9bb8e0; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid #eef1f5; vertical-align:top; }
+  th { color:#5b6672; font-weight:600; white-space:nowrap; }
+  .ok { color:var(--ok); font-weight:600; }
+  .bad { color:var(--bad); font-weight:600; }
+  .muted { color:#5b6672; font-size:.85rem; }
+  .msg { min-height:1.2em; font-size:.88rem; margin-top:8px; }
+  .tok { font-family:monospace; font-size:.72rem; word-break:break-all; color:#5b6672; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:.78rem; background:#eef3fb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>КартЭдит — панель управления</h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Тарифы <span class="muted" id="pr-upd"></span></h2>
+      <label>Первая покупка, ₽/мес</label>
+      <input id="pr-first" type="number" min="1">
+      <label>Продление, ₽/мес</label>
+      <input id="pr-renew" type="number" min="1">
+      <label>Максимум месяцев за раз</label>
+      <input id="pr-max" type="number" min="1" max="24">
+      <button id="pr-save">Сохранить тарифы</button>
+      <div class="msg" id="pr-msg"></div>
+      <div class="muted">Применяется сразу: сайт и новые платежи читают эти цифры.
+      Уже созданных ссылок на оплату не меняет.</div>
+    </div>
+
+    <div class="card">
+      <h2>Состояние</h2>
+      <div id="health" class="muted">загрузка…</div>
+      <h2 style="margin-top:16px">Дистрибутив</h2>
+      <div id="version" class="muted">загрузка…</div>
+      <h2 style="margin-top:16px">Требуют разбора</h2>
+      <div id="attention" class="muted">—</div>
+    </div>
+
+    <div class="card full">
+      <h2>Ждут выдачи <span class="pill" id="q-count"></span>
+        <span class="muted" id="q-hold"></span></h2>
+      <div class="muted">Оплаченные заказы. Ключ уедет сам в указанный срок —
+      если всё в порядке, делать ничего не надо. «Выдать сейчас» перед выпуском
+      ещё раз спрашивает ЮKassa, оплачен ли платёж.</div>
+      <div style="overflow-x:auto; margin-top:10px">
+      <table id="q-table">
+        <thead><tr><th>Оплачен</th><th>Email</th><th>Пер.</th><th>Сумма</th>
+        <th>Уедет</th><th>HWID</th><th>Статус</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <div class="msg" id="q-msg"></div>
+    </div>
+
+    <div class="card full">
+      <h2>Выданные ключи <span class="pill" id="k-count"></span></h2>
+      <input id="k-filter" placeholder="поиск: email / payment_id / HWID" style="max-width:340px">
+      <div style="overflow-x:auto; margin-top:10px">
+      <table id="k-table">
+        <thead><tr><th>Выдан</th><th>Email</th><th>Мес.</th><th>Сумма</th><th>До</th>
+        <th>HWID</th><th>Письмо</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+      <div class="msg" id="k-msg"></div>
+    </div>
+  </div>
+</div>
+<script>
+let DATA = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fdate = ts => ts ? new Date(ts*1000).toLocaleDateString('ru-RU') : 'бессрочно';
+
+async function load() {
+  const r = await fetch('/admin/api/summary');
+  if (!r.ok) { document.body.innerHTML = '<p style="margin:40px">Ошибка авторизации или сервера ('+r.status+')</p>'; return; }
+  DATA = await r.json();
+  const p = DATA.pricing;
+  $('pr-first').value = p.first_month_rub;
+  $('pr-renew').value = p.renewal_month_rub;
+  $('pr-max').value = p.max_months;
+  $('pr-upd').textContent = p.updated_at ? '· изм. ' + p.updated_at : '';
+  const h = DATA.health;
+  $('health').innerHTML =
+    'Приватный ключ: ' + (h.priv_key ? '<span class="ok">есть</span>' : '<span class="bad">НЕТ</span>') +
+    ' · ЮKassa: ' + (h.yk_configured ? '<span class="ok">настроена</span>' : '<span class="bad">нет</span>') +
+    ' · SMTP: ' + (h.smtp_configured ? '<span class="ok">настроен</span>' : '<span class="bad">нет</span>');
+  const v = DATA.version || {};
+  $('version').textContent = v.version
+    ? 'версия ' + v.version + ' · файл ' + (v.installer || '—') : 'version.json не залит';
+  const att = (DATA.attention || []).filter(a => !a.resolved);
+  $('attention').innerHTML = att.length
+    ? att.map(a => '<div class="bad">' + esc(a.at) + ' [' + esc(a.kind) + '] ' + esc(a.detail) + '</div>').join('')
+    : '<span class="ok">нет</span>';
+  renderQueue();
+  renderKeys();
+}
+
+function renderQueue() {
+  const items = (DATA.pending || []).slice().reverse();
+  const ждут = items.filter(r => r.status === 'ждёт').length;
+  $('q-count').textContent = ждут + ' / ' + items.length;
+  $('q-hold').textContent = DATA.hold_hours
+    ? '· карантин ' + DATA.hold_hours + ' ч' : '· карантин ВЫКЛЮЧЕН';
+  $('q-table').querySelector('tbody').innerHTML = items.map(r => {
+    const ждёт = r.status === 'ждёт';
+    const цвет = ждёт ? '' : (r.status === 'выдан' ? 'ok' : 'bad');
+    const кнопки = (r.status === 'выдан') ? '' :
+      '<button class="small" onclick="queue(\'' + esc(r.payment_id) + '\',\'release\')">выдать сейчас</button> ' +
+      (ждёт
+        ? '<button class="small" onclick="queue(\'' + esc(r.payment_id) + '\',\'stop\')">стоп</button> ' +
+          '<button class="small" onclick="queue(\'' + esc(r.payment_id) + '\',\'reject\')">отклонить</button>'
+        : '<button class="small" onclick="queue(\'' + esc(r.payment_id) + '\',\'resume\')">вернуть в очередь</button>');
+    return '<tr>' +
+      '<td>' + esc(r.created_at) + '</td>' +
+      '<td>' + esc(r.email) + '</td>' +
+      '<td>' + esc(r.months || 1) + '</td>' +
+      '<td>' + esc(r.amount || '—') + '</td>' +
+      '<td>' + (r.release_at ? new Date(r.release_at*1000).toLocaleString('ru-RU') : '—') + '</td>' +
+      '<td class="tok">' + esc(r.hwid || '—') + '</td>' +
+      '<td class="' + цвет + '">' + esc(r.status) +
+        (r['причина'] ? ' <span class="muted">(' + esc(r['причина']) + ')</span>' : '') + '</td>' +
+      '<td>' + кнопки + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" class="muted">пусто</td></tr>';
+}
+
+async function queue(pid, action) {
+  const слово = {release:'Выдать ключ сейчас', stop:'Остановить выдачу',
+                 reject:'Отклонить заказ', resume:'Вернуть в очередь'}[action];
+  if (!confirm(слово + '?\n\nПлатёж: ' + pid)) return;
+  $('q-msg').textContent = 'Выполняем…';
+  const r = await fetch('/admin/api/queue', { method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({payment_id: pid, action: action}) });
+  const d = await r.json().catch(() => ({}));
+  $('q-msg').textContent = r.ok ? (d['текст'] || ('статус: ' + d.status))
+                                : ('Ошибка: ' + (d.detail || r.status));
+  $('q-msg').className = 'msg ' + (r.ok ? 'ok' : 'bad');
+  if (r.ok) load();
+}
+
+function renderKeys() {
+  const q = ($('k-filter').value || '').toLowerCase();
+  const revoked = new Set((DATA.revoked || []).map(r => r.token));
+  const items = (DATA.keys || []).slice().reverse().filter(r =>
+    !q || (r.email || '').toLowerCase().includes(q) ||
+    (r.payment_id || '').toLowerCase().includes(q) ||
+    (r.hwid || '').toLowerCase().includes(q));
+  $('k-count').textContent = items.length + ' / ' + (DATA.keys || []).length;
+  $('k-table').querySelector('tbody').innerHTML = items.map(r => '<tr>' +
+    '<td>' + esc(r.issued_at) + (revoked.has(r.token) ? ' <span class="bad">ОТОЗВАН</span>' : '') + '</td>' +
+    '<td>' + esc(r.email) + '</td>' +
+    '<td>' + esc(r.months || 1) + '</td>' +
+    '<td>' + esc(r.amount || '—') + '</td>' +
+    '<td>' + fdate(r.exp) + '</td>' +
+    '<td class="tok">' + esc(r.hwid || '—') + '</td>' +
+    '<td>' + (r.emailed ? '<span class="ok">ушло</span>' : '<span class="bad">нет</span>') + '</td>' +
+    '<td><button class="small" onclick="resend(\'' + esc(r.payment_id) + '\')">выслать ключ</button>' +
+    (revoked.has(r.token) ? '' : ' <button class="small" onclick="revoke(\'' + esc(r.payment_id) + '\')">отозвать</button>') + '</td>' +
+    '</tr>').join('') || '<tr><td colspan="8" class="muted">пусто</td></tr>';
+}
+
+async function resend(pid) {
+  $('k-msg').textContent = 'Отправляем…';
+  const r = await fetch('/admin/api/resend', { method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({payment_id: pid}) });
+  const d = await r.json().catch(() => ({}));
+  $('k-msg').textContent = r.ok ? ('Ключ выслан на ' + d.email) : ('Ошибка: ' + (d.detail || r.status));
+  $('k-msg').className = 'msg ' + (r.ok ? 'ok' : 'bad');
+}
+
+async function revoke(pid) {
+  const reason = prompt('Причина отзыва (перенос / возврат / иное). Отзыв необратим из админки.', 'перенос');
+  if (!reason) return;
+  const r = await fetch('/admin/api/revoke', { method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({payment_id: pid, reason: reason}) });
+  const d = await r.json().catch(() => ({}));
+  $('k-msg').textContent = r.ok ? ('Ключ отозван, отпечаток ' + d.h) : ('Ошибка: ' + (d.detail || r.status));
+  $('k-msg').className = 'msg ' + (r.ok ? 'ok' : 'bad');
+  if (r.ok) load();
+}
+
+$('pr-save').addEventListener('click', async () => {
+  $('pr-msg').textContent = 'Сохраняем…';
+  const r = await fetch('/admin/api/pricing', { method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ first_month_rub: +$('pr-first').value,
+      renewal_month_rub: +$('pr-renew').value, max_months: +$('pr-max').value }) });
+  const d = await r.json().catch(() => ({}));
+  $('pr-msg').textContent = r.ok ? 'Сохранено' : ('Ошибка: ' + (d.detail || r.status));
+  $('pr-msg').className = 'msg ' + (r.ok ? 'ok' : 'bad');
+  if (r.ok) $('pr-upd').textContent = '· изм. ' + d.updated_at;
+});
+$('k-filter').addEventListener('input', renderKeys);
+load();
+</script>
+</body>
+</html>
