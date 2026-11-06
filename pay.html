@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Оплата подписки — КартЭдит</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --acc:#1a73e8; --bg:#f6f8fa; --tx:#1b2430; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; color:var(--tx); background:var(--bg); }
+  .wrap { max-width:560px; margin:0 auto; padding:32px 20px 60px; }
+  h1 { font-size:1.6rem; margin:16px 0 8px; }
+  .sub { color:#5b6672; font-size:.98rem; margin-bottom:24px; }
+  .beta { display:inline-block; background:#fff3e0; color:#b26a00; border:1px solid #ffd699;
+          border-radius:6px; padding:2px 10px; font-size:.85rem; font-weight:600; vertical-align:middle; }
+  .card { background:#fff; border:1px solid #e3e8ee; border-radius:12px; padding:24px; margin-bottom:20px; }
+  .price { font-size:1.6rem; font-weight:700; }
+  .price small { font-size:1rem; font-weight:400; color:#5b6672; }
+  .base { color:#5b6672; font-size:.9rem; margin-top:2px; }
+  .base s { color:#98a2ad; }
+  label { display:block; margin:14px 0 4px; font-weight:600; font-size:.92rem; }
+  input, select { width:100%; padding:10px 12px; font-size:1rem; border:1px solid #c8d0da; border-radius:8px; }
+  input:focus, select:focus { outline:2px solid var(--acc); border-color:var(--acc); }
+  .hint { color:#5b6672; font-size:.85rem; margin-top:4px; }
+  .agree { display:flex; gap:10px; align-items:flex-start; margin-top:18px; font-size:.9rem; line-height:1.45; }
+  .agree input { width:18px; height:18px; margin-top:2px; flex:none; }
+  button { margin-top:16px; width:100%; padding:13px; font-size:1.05rem; font-weight:600;
+           color:#fff; background:var(--acc); border:0; border-radius:8px; cursor:pointer; }
+  button:disabled { background:#9bb8e0; cursor:not-allowed; }
+  .err { color:#c62828; margin-top:12px; font-size:.92rem; min-height:1.2em; }
+  .foot { color:#5b6672; font-size:.85rem; margin-top:24px; }
+  a { color:var(--acc); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p><a href="/">&larr; На главную</a></p>
+  <h1>Оплата подписки КартЭдит <span class="beta">бета-версия</span></h1>
+  <div class="sub">Лицензионный ключ придёт на email автоматически после подтверждения
+  оплаты — обычно в течение нескольких минут. Оплата картой или СБП через ЮKassa. Действующая версия ПО — тестовая (бета):
+  при заявленной работоспособности возможны отдельные сбои (п. 6.4 <a href="/offer">оферты</a>).</div>
+
+  <div class="card">
+    <div class="price" id="price">… ₽ <small>/ период (30 дней) — один компьютер</small></div>
+    <div class="base" id="price-note"></div>
+
+    <label for="email">Email (на него придёт ключ)</label>
+    <input id="email" type="email" placeholder="you@mail.ru" autocomplete="email">
+
+    <label for="hwid">Код компьютера</label>
+    <input id="hwid" placeholder="XXXX-XXXX-XXXX" maxlength="14" spellcheck="false">
+    <div class="hint">Откройте КартЭдит → бейдж лицензии (правый верхний угол) →
+    «Активация» → «Код компьютера» (клик по коду копирует его).</div>
+
+    <label for="months">Оплатить сразу (периодов)</label>
+    <select id="months"></select>
+
+    <label for="innf">ИНН организации или ИП — для чека (необязательно)</label>
+    <input id="innf" inputmode="numeric" placeholder="10 или 12 цифр" maxlength="12" spellcheck="false">
+    <div class="hint">Заполняется при покупке для организации или ИП: чек с вашим ИНН нужен
+    для учёта расходов (ст. 15 закона № 422-ФЗ). Указывая ИНН, вы подтверждаете приобретение
+    для предпринимательской (профессиональной) деятельности — п. 5.7 оферты.</div>
+
+    <label class="agree" for="agree">
+      <input id="agree" type="checkbox">
+      <span>Я согласен с условиями <a href="/offer" target="_blank">Оферты</a> и ознакомлен
+      с <a href="/privacy" target="_blank">Политикой обработки персональных данных</a></span>
+    </label>
+
+    <button id="pay" disabled>Перейти к оплате</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="foot">
+    Базовый тариф — <span id="foot-base">30&nbsp;000</span>&nbsp;₽ за период (30 календарных дней)<span
+    id="foot-promo">.</span> Без автопродления и автосписаний: продление — только новой оплатой.
+    НДС не облагается (НПД).
+  </div>
+  <div class="card" id="b2b">
+    <div class="price">Организациям — по счёту <small>безнал, без комиссии</small></div>
+    <div class="base">Оплата платёжным поручением. Ключ выпускается не позднее одного
+    рабочего дня с даты зачисления средств (п. 5.2 оферты). Код компьютера на этом
+    шаге не нужен — спросим при выпуске ключа.</div>
+
+    <label for="org">Организация (как в реквизитах)</label>
+    <input id="org" placeholder="ООО «Компания»" maxlength="200" spellcheck="false">
+
+    <label for="inno">ИНН организации или ИП</label>
+    <input id="inno" inputmode="numeric" placeholder="10 или 12 цифр" maxlength="12" spellcheck="false">
+
+    <label for="emailo">Email для счёта и документов</label>
+    <input id="emailo" type="email" placeholder="buh@company.ru" autocomplete="email">
+
+    <label for="monthso">Оплатить сразу (периодов)</label>
+    <select id="monthso"></select>
+
+    <label class="agree" for="agreeo">
+      <input id="agreeo" type="checkbox">
+      <span>Я согласен с условиями <a href="/offer" target="_blank">Оферты</a> и ознакомлен
+      с <a href="/privacy" target="_blank">Политикой обработки персональных данных</a></span>
+    </label>
+
+    <button id="order" disabled>Запросить счёт</button>
+    <div class="err" id="erro"></div>
+  </div>
+  <div class="foot">
+    Реквизиты продавца для бухгалтерии — на странице
+    <a href="/requisites">Контакты и реквизиты</a>. Вопросы по документам:
+    <a href="mailto:support@kartedit.ru">support@kartedit.ru</a>.
+  </div>
+  <div class="foot">
+    <a href="/offer">Публичная оферта</a> · <a href="/privacy">Политика ПДн</a> ·
+    <a href="/requisites">Контакты и реквизиты</a><br>
+    Киселев С.С., самозанятый (НПД), ИНН <span id="inn">637205381490</span>
+  </div>
+</div>
+<script>
+const btn = document.getElementById('pay'), err = document.getElementById('err');
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString('ru-RU');
+const OFFER_VER = 'v6-2026-09-02';
+let PRICING = null, perMonth = null;
+// promo_until приходит как 2026-09-01 — это день, С КОТОРОГО скидки уже нет;
+// покупателю показываем «до 01.09.2026», как написано в оферте.
+const ruDate = s => (s || '').split('-').reverse().join('.');
+
+function updPrice() {
+  if (!perMonth) return;
+  $('price').innerHTML = fmt(perMonth) + ' ₽ <small>/ период (30 дней) — один компьютер</small>';
+  const opts = $('months').options;
+  for (const o of opts) {
+    const n = +o.value;
+    o.textContent = n + ' ' + (n === 1 ? 'период' : (n < 5 ? 'периода' : 'периодов'))
+                  + ' — ' + fmt(perMonth * n) + ' ₽';
+  }
+  // Скидка рисуется по ответу сервера (promo_active/discount_pct), а не
+  // строкой в вёрстке: до 31.08.2026 здесь стояло «скидка 50%» намертво, и
+  // после истечения промо страница обещала бы скидку при полной цене.
+  const base = PRICING ? PRICING.renewal_month_rub : 30000;
+  const promo = PRICING && PRICING.promo_active && perMonth < base;
+  // Подвал тоже рисуем по ответу сервера: строка «скидка 50%» в вёрстке пережила
+  // бы истечение промо и обещала бы скидку, которой уже нет.
+  $('foot-base').innerHTML = fmt(base).replace(/\s/g, '&nbsp;');
+  $('foot-promo').innerHTML = promo
+    ? ', новым пользователям скидка ' + (PRICING.discount_pct || 50) +
+      '% на весь первый заказ' +
+      (PRICING.promo_until ? ', созданный до ' + ruDate(PRICING.promo_until) : '') + '.'
+    : '.';
+  $('price-note').innerHTML = (PRICING && PRICING.renewal)
+    ? 'Продление: базовый тариф ' + fmt(base) + ' ₽ за период.'
+    : (promo
+        ? 'Базовый тариф <s>' + fmt(base) + ' ₽</s> — скидка ' +
+          (PRICING.discount_pct || 50) + '% новым пользователям на весь первый заказ' +
+          (PRICING.promo_until ? ' (до ' + ruDate(PRICING.promo_until) + ')' : '') + '.'
+        : 'Базовый тариф ' + fmt(base) + ' ₽ за период.');
+}
+
+function updBtn() { btn.disabled = !$('agree').checked; }
+
+async function loadPricing() {
+  const email = $('email').value.trim(), hwid = $('hwid').value.trim();
+  const q = new URLSearchParams();
+  if (email) q.set('email', email);
+  if (hwid.replace(/[^A-Za-z0-9]/g,'').length === 12) q.set('hwid', hwid);
+  try {
+    const r = await fetch('/api/pricing' + (q.toString() ? '?' + q : ''));
+    PRICING = await r.json();
+    perMonth = PRICING.per_month_rub || PRICING.first_month_rub;
+    const sel = $('months');
+    if (!sel.options.length) {
+      for (const m of [1, 2, 3, 6, 12]) {
+        if (m > PRICING.max_months) break;
+        sel.add(new Option(m, m));
+      }
+    }
+    updPrice();
+  } catch (e) { /* цена покажется после восстановления сети */ }
+}
+
+$('hwid').addEventListener('input', e => {
+  const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);
+  e.target.value = raw.replace(/(.{4})(?=.)/g, '$1-');
+});
+$('innf').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g,'').slice(0,12);
+});
+$('email').addEventListener('change', loadPricing);
+$('hwid').addEventListener('change', loadPricing);
+$('months').addEventListener('change', updPrice);
+$('agree').addEventListener('change', updBtn);
+
+btn.addEventListener('click', async () => {
+  err.textContent = '';
+  const inn = $('innf').value.trim();
+  if (inn && inn.length !== 10 && inn.length !== 12) {
+    err.textContent = 'ИНН — 10 цифр (организация) или 12 цифр (ИП), либо оставьте поле пустым';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Создаём платёж…';
+  try {
+    const r = await fetch('/api/pay', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email: $('email').value,
+        hwid:  $('hwid').value,
+        months: +($('months').value || 1),
+        inn: inn,
+        accepted: $('agree').checked,
+        offer_ver: OFFER_VER })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Ошибка сервера');
+    location.href = d.url;
+  } catch (e) {
+    err.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Перейти к оплате';
+    updBtn();
+  }
+});
+// --------------------------------------------------- безнал для организаций
+// Отдельная форма, а не переключатель на той же: у организации другой email
+// (бухгалтерия), нет кода компьютера и есть название с ИНН. Согласие с офертой
+// тоже своё — акцепт привязан к КОНКРЕТНОМУ действию, чужая галочка не считается.
+const bo = $('order'), erro = $('erro');
+function updBo() { bo.disabled = !$('agreeo').checked; }
+function fillMonthsO() {
+  const sel = $('monthso');
+  if (sel.options.length || !PRICING) return;
+  for (const m of [1, 2, 3, 6, 12]) {
+    if (m > PRICING.max_months) break;
+    sel.add(new Option(m, m));
+  }
+}
+$('inno').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g,'').slice(0,12);
+});
+$('agreeo').addEventListener('change', updBo);
+bo.addEventListener('click', async () => {
+  erro.textContent = '';
+  const inn = $('inno').value.trim();
+  if (inn && inn.length !== 10 && inn.length !== 12) {
+    erro.textContent = 'ИНН — 10 цифр (организация) или 12 цифр (ИП), либо оставьте поле пустым';
+    return;
+  }
+  bo.disabled = true; bo.textContent = 'Отправляем заявку…';
+  try {
+    const r = await fetch('/api/order', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email: $('emailo').value,
+        org:   $('org').value,
+        inn:   inn,
+        months: +($('monthso').value || 1),
+        accepted: $('agreeo').checked,
+        offer_ver: OFFER_VER })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Ошибка сервера');
+    // Сумму печатаем ту, что вернул СЕРВЕР: на странице могла остаться цена,
+    // посчитанная до истечения промо, и покупатель ждал бы другой счёт.
+    $('b2b').innerHTML = '<div class="price">Заявка ' + d.order + ' принята</div>' +
+      '<div class="base">' + d.message + '</div>';
+  } catch (e) {
+    erro.textContent = e.message;
+    bo.textContent = 'Запросить счёт';
+    updBo();
+  }
+});
+
+loadPricing().then(fillMonthsO);
+</script>
+</body>
+</html>

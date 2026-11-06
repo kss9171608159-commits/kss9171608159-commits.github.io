@@ -1,0 +1,357 @@
+/* ===== КартЭдит — Layout 2.0 (классический десктопный ГТИ-интерфейс) ===== */
+:root{
+  --bg:#c9ced6;
+  --panel:#f3f4f6;
+  --panel-2:#e7e9ee;
+  --border:#9aa2ad;
+  --border-l:#c2c7cf;
+  --txt:#1b2430;
+  --muted:#5d6671;
+  --accent:#15539e;
+  --accent-d:#0f3d75;
+  --btn:#eef0f3;
+  --btn-h:#dfe3e9;
+  --toolbar-h:28px;          /* минимальная шапка в одну строку */
+  --mono:"Consolas","Cascadia Mono",monospace;
+  --ui:"Segoe UI",system-ui,sans-serif;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;overflow:hidden;}
+body{font-family:var(--ui);font-size:12px;color:var(--txt);background:var(--bg);user-select:none;}
+#app{height:100vh;display:flex;flex-direction:column;}
+
+/* ===== TOOLBAR (мини, строго одна строка) ===== */
+#toolbar{
+  height:var(--toolbar-h);min-height:var(--toolbar-h);
+  display:flex;align-items:center;
+  padding:0 6px;gap:6px;
+  background:linear-gradient(#fbfcfd,#e4e7ec);
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;overflow-x:auto;overflow-y:hidden;
+}
+.tb-group{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
+.tb-sep{flex:0 0 auto;width:1px;height:18px;background:var(--border-l);margin:0 2px;}
+.tb-icon{
+  width:22px;height:20px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;border:1px solid var(--border-l);border-radius:3px;
+  background:var(--btn);cursor:pointer;line-height:1;padding:0;flex:0 0 auto;
+}
+.tb-icon:hover{background:var(--btn-h);}
+.tb-icon:active{background:#cfd4db;}
+.tb-icon.on{background:#2f6df0;color:#fff;border-color:#2f6df0;box-shadow:0 1px 4px rgba(47,109,240,.45);}
+/* #B24: индикатор «есть несохранённые правки» — красная точка на кнопке 💾 */
+.tb-icon.dirty{position:relative;}
+.tb-icon.dirty::after{
+  content:"";position:absolute;top:-2px;right:-2px;width:7px;height:7px;
+  border-radius:50%;background:#e0393e;border:1px solid #fff;
+}
+.tb-title{flex:0 0 auto;margin-left:6px;font-weight:600;color:var(--muted);
+  font-size:11.5px;letter-spacing:.2px;}
+
+/* ===== бейдж лицензии (B-fix 01-08: активация без выхода из основного окна) ===== */
+.tb-license-badge{width:auto;padding:0 8px;font:600 10.5px var(--ui);letter-spacing:.2px;}
+.tb-license-badge.lic-trial{background:#fff3cd;border-color:#e8c468;color:#7a5b00;}
+.tb-license-badge.lic-licensed{background:#dcf3e0;border-color:#6cc27a;color:#186429;}
+.tb-license-badge.lic-expired{background:#fbdadb;border-color:#e0393e;color:#8a1418;}
+#license-pop{min-width:230px;}
+#license-key-input{font-family:var(--mono);font-size:11px;}
+#license-msg.ok{color:#186429;}
+#license-msg.err{color:#8a1418;}
+
+/* ===== WORKSPACE ===== */
+#workspace{flex:1;display:flex;min-height:0;}
+
+/* ===== LEFT SIDEBAR (дерево 40% / AI 60%) ===== */
+#sidebar{
+  width:22%;min-width:220px;max-width:55%;flex:0 0 auto;
+  display:flex;flex-direction:column;
+  background:var(--panel);border-right:1px solid var(--border);min-height:0;
+}
+
+/* --- дерево (по умолчанию 20%, дальше — тянем границей) --- */
+#tree-section{flex:0 0 20%;display:flex;flex-direction:column;min-height:80px;
+  border-bottom:1px solid var(--border);}
+.tree-header{
+  display:flex;height:22px;align-items:center;
+  background:var(--panel-2);border-bottom:1px solid var(--border-l);
+  font-weight:600;color:var(--muted);
+}
+.tree-col-brigade{flex:1;padding-left:8px;}
+.tree-col-type{width:140px;padding-left:6px;border-left:1px solid var(--border-l);}
+.tree-body{flex:1;overflow:auto;}
+.tree-node{cursor:pointer;}
+.tree-row{display:flex;align-items:center;height:21px;border-bottom:1px solid #eceef1;}
+.tree-row:hover{background:#e3ecf7;}
+.tree-row.selected{background:#cfe0f5;}
+.tree-row .tw-name{flex:1;display:flex;align-items:center;gap:3px;padding-left:6px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tree-row .tw-type{width:140px;padding-left:6px;color:var(--muted);
+  border-left:1px solid #eceef1;font-family:var(--mono);
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tw-toggle{width:12px;display:inline-block;text-align:center;color:var(--muted);}
+/* #v93: месторождение и № скважины в дереве — раздельно кликабельны (двойной клик) */
+.tw-field,.tw-well{cursor:pointer;border-radius:3px;padding:0 2px;}
+.tw-field:hover,.tw-well:hover{background:#eef4ff;text-decoration:underline;}
+.tree-child .tw-name{padding-left:22px;}
+.tree-child.hidden{display:none;}
+
+/* --- AI-ассистент (занимает остаток; поле ввода всегда видно) --- */
+#ai-section{flex:1 1 auto;display:flex;flex-direction:column;min-height:120px;}
+.ai-head{
+  height:22px;display:flex;align-items:center;padding:0 8px;
+  background:var(--accent);color:#fff;font-weight:600;
+}
+/* Лента сообщений: можно РАСШИРИТЬ вручную (перетащить нижний правый угол).
+   min-height = не уже содержимого; при переполнении — своя прокрутка. */
+.ai-messages{flex:1 1 auto;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px;
+  min-height:70px;resize:vertical;}
+/* Панель действий по выделению — всегда показывается целиком (кнопки переносятся),
+   не заставляет прокручивать всплывающие действия. */
+#ai-context{flex:0 0 auto;overflow:auto;max-height:45%;}
+.msg{max-width:94%;padding:6px 8px;border-radius:7px;font-size:11px;line-height:1.35;
+  white-space:pre-wrap;word-break:break-word;}
+.msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:2px;}
+.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--border-l);border-bottom-left-radius:2px;}
+.msg.note{align-self:stretch;max-width:100%;background:#fffdf3;border:1px solid #e9dca8;
+  border-left:3px solid #d9a441;color:#5a4a1e;font-size:10.5px;}
+.msg.note .nt{font-weight:600;text-transform:uppercase;font-size:9px;letter-spacing:.4px;
+  color:#9a7c2e;margin-right:4px;}
+/* строка ввода — поле на всю ширину, иконки внутри справа */
+.ai-input-row{
+  display:flex;padding:6px;
+  border-top:1px solid var(--border-l);background:var(--panel-2);
+}
+.ai-input-wrap{position:relative;flex:1;display:flex;}
+#ai-input{
+  flex:1;resize:none;overflow-y:hidden;
+  font-family:var(--ui);font-size:12px;line-height:1.4;
+  padding:6px 78px 6px 8px;            /* место под три иконки справа */
+  border:1px solid var(--border-l);border-radius:6px;
+  max-height:96px;background:#fff;user-select:text;
+}
+#ai-input:focus{outline:1px solid var(--accent);border-color:var(--accent);}
+.ai-ic{
+  position:absolute;bottom:5px;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;
+  border:none;background:transparent;cursor:pointer;
+  font-size:13px;line-height:1;padding:0;border-radius:5px;color:var(--muted);
+  opacity:.5;transition:opacity .12s,background .12s;
+}
+.ai-ic:hover{background:var(--btn-h);opacity:1;}
+#ai-clip{right:52px;}
+#ai-mic{right:28px;}
+.ai-send-ic{right:4px;color:var(--accent);font-size:14px;}
+.ai-send-ic:hover{background:#dbe6f4;color:var(--accent-d);opacity:1;}
+
+/* ===== RIGHT CONTENT ===== */
+#content{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
+.panel{display:flex;flex-direction:column;min-height:0;background:var(--panel);}
+#charts-panel{flex:0 0 73%;}
+#table-panel{flex:1 1 0;}
+
+/* channel toggle tabs — суб-хедер прямо над графиком */
+.subhdr{
+  display:flex;align-items:center;gap:8px;
+  height:26px;min-height:26px;padding:0 6px;
+  background:var(--panel-2);border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+/* Ф4 (#2026-07-18): имя открытого файла — крупно над графиком */
+.file-title{flex:0 0 auto;max-width:38%;overflow:hidden;text-overflow:ellipsis;
+  font-weight:700;font-size:13px;color:var(--fg,#222);}
+.file-title.dirty{color:#b45309;}
+.nib-warn{flex:0 0 auto;margin-left:8px;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;color:#92400e;background:#fef3c7;border:1px solid #f59e0b;cursor:help;white-space:nowrap;}
+
+/* все кнопки каналов делят ширину поровну и помещаются в ОДНУ строку без скролла */
+.chan-tabs{display:flex;flex-wrap:nowrap;align-items:center;gap:2px;
+  flex:1 1 auto;overflow:hidden;min-width:0;}
+
+/* поля выбора окна времени в верхнем тулбаре */
+.tb-time{display:flex;align-items:center;gap:4px;margin-left:10px;}
+.tb-dt{font-family:var(--mono);font-size:11px;padding:1px 4px;height:20px;
+  border:1px solid var(--border-l);border-radius:3px;background:#fff;color:#333;}
+.tb-dash{color:var(--muted);font-size:12px;}
+.chan-btn{font-family:var(--mono);font-size:10px;padding:2px 4px;
+  border:1px solid var(--border-l);border-radius:3px;background:#fff;color:var(--muted);
+  cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;gap:3px;
+  flex:1 1 0;min-width:0;height:20px;}
+.chan-btn .dot{flex:0 0 auto;width:8px;height:8px;border-radius:2px;background:#bbb;}
+.chan-btn .cname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chan-btn.active{color:#fff;border-color:var(--accent-d);}
+.chan-btn.fixed{box-shadow:inset 0 0 0 1px #fff, 0 0 0 2px #ffcf3d;}
+#chart{flex:1;min-height:0;background:#fff;position:relative;cursor:grab;}
+#chart.zoomed{outline:2px solid #c0392b;outline-offset:-2px;}
+.zoom-rect{position:absolute;display:none;z-index:30;pointer-events:none;
+  border:1px solid #c0392b;background:rgba(192,57,43,.10);}
+
+/* ===== линейка месторождение/скважина над графиком (перетаскиваемая) ===== */
+#ruler{position:absolute;left:0;top:0;height:22px;z-index:20;pointer-events:none;}
+.rl-cell{position:absolute;top:1px;height:19px;box-sizing:border-box;
+  display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap;
+  padding:0 6px;font-size:10.5px;line-height:1;border-radius:3px;
+  border:1px solid rgba(120,130,145,.6);pointer-events:auto;cursor:default;
+  backdrop-filter:blur(1px);}
+.rl-cell .rl-fld,.rl-cell .rl-wel{cursor:text;padding:1px 2px;border-radius:2px;
+  overflow:hidden;text-overflow:ellipsis;}
+.rl-cell .rl-fld{font-weight:600;color:#2b3440;}
+.rl-cell .rl-wel{color:#1a3a6b;font-weight:600;}
+.rl-cell .rl-fld:hover,.rl-cell .rl-wel:hover{background:rgba(255,255,255,.65);
+  outline:1px dashed rgba(80,90,105,.5);}
+.rl-cell .rl-sep{color:#7a8290;}
+/* ручка-разделитель между сериями скважин — тянуть = двигать границу */
+.rl-div{position:absolute;top:0;height:22px;width:9px;margin-left:-4px;z-index:22;
+  pointer-events:auto;cursor:ew-resize;}
+.rl-div::before{content:"";position:absolute;left:4px;top:1px;width:2px;height:20px;
+  background:rgba(90,100,115,.75);border-radius:1px;}
+.rl-div:hover::before{background:#c0392b;width:3px;left:3px;}
+/* «призрак» границы при перетаскивании */
+.rl-ghost{position:absolute;top:0;bottom:0;width:0;z-index:6;pointer-events:none;
+  border-left:2px dashed #c0392b;}
+.rl-pull{background:repeating-linear-gradient(45deg,rgba(192,57,43,.14),
+  rgba(192,57,43,.14) 5px,rgba(192,57,43,.05) 5px,rgba(192,57,43,.05) 10px)!important;
+  border-color:#c0392b!important;}
+
+/* полупрозрачная полоса ПКМ-выделения поверх графика */
+.sel-band{position:absolute;top:0;bottom:0;z-index:5;pointer-events:none;
+  background:rgba(21,83,158,0.12);border-left:1px solid rgba(21,83,158,.6);
+  border-right:1px solid rgba(21,83,158,.6);}
+
+/* ===== контекст выделения над полем ввода AI ===== */
+#ai-context{border-top:1px solid var(--border-l);background:#fbfcfe;
+  padding:5px 6px;display:flex;flex-direction:column;gap:5px;max-height:140px;overflow:auto;}
+.sel-hd{font-size:10px;color:var(--muted);font-weight:600;}
+.sel-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.sel-chip{display:flex;align-items:center;gap:4px;cursor:pointer;
+  font-family:var(--mono);font-size:10px;line-height:1;padding:3px 6px;border-radius:5px;
+  border:1px solid var(--cc);background:#fff;color:var(--cc);
+  box-shadow:0 1px 0 rgba(0,0,0,.12);transition:transform .06s,box-shadow .06s;}
+.sel-chip .sc-val{color:var(--muted);}
+.sel-chip:hover{background:#f1f5fb;}
+.sel-chip.on{color:#fff;background:var(--cc);box-shadow:0 2px 4px rgba(0,0,0,.28);
+  transform:translateY(-1px);}        /* объёмная «нажатая» кнопка */
+.sel-chip.on .sc-val{color:rgba(255,255,255,.85);}
+.sel-tokens{display:flex;flex-wrap:wrap;align-items:center;gap:4px;
+  padding-top:3px;border-top:1px dashed var(--border-l);}
+.sel-token{color:#fff;font-size:9.5px;font-weight:600;padding:2px 6px;border-radius:9px;
+  font-family:var(--mono);}
+.sel-hint{font-size:9.5px;color:var(--muted);}
+.sel-acts{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;}
+.sel-act{font-size:10px;line-height:1;padding:4px 8px;border-radius:5px;cursor:pointer;
+  border:1px solid var(--border-l);background:#fff;color:#2a2f37;
+  box-shadow:0 1px 0 rgba(0,0,0,.10);transition:background .08s;}
+.sel-act:hover:not(:disabled){background:#eef3fb;}
+.sel-act:disabled{opacity:.4;cursor:default;}
+
+/* V8 (F16): предупреждение о накопительном канале — ДО правки, не после отказа.
+   Жёлтое, а не красное: это не ошибка оператора и не запрет на работу, а
+   названная заранее граница возможного. Красный здесь обесценил бы красный. */
+.sel-warn{margin-top:5px;padding:5px 7px;border-radius:5px;font-size:10px;line-height:1.35;
+  border:1px solid #e0c060;background:#fdf6e0;color:#5a4a12;}
+.sel-warn b{font-weight:600;}
+.sel-warn .sel-act{margin-top:4px;}
+
+/* Этап 3: ряд арифметики по выделению */
+.sel-arith{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding-top:4px;}
+.sel-arith-n{width:58px;font-size:10px;font-family:var(--mono);padding:3px 5px;
+  border:1px solid var(--border-l);border-radius:5px;background:#fff;color:#2a2f37;}
+.sel-arith-b{font-family:var(--mono);font-weight:600;}
+
+/* ФАЗА 2, Часть B: обучающийся бар частых действий (грей-подсказки) */
+.sel-quick{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:4px 0 2px;}
+.qa-lbl{font-size:9.5px;color:var(--muted);font-weight:600;margin-right:2px;cursor:help;}
+.qa-btn{font-size:10px;line-height:1;padding:4px 8px;border-radius:5px;cursor:pointer;
+  border:1px solid var(--border-l);background:#f0f2f5;color:#5a626c;
+  transition:background .08s,color .08s;}
+.qa-btn:hover:not(:disabled){background:#e2e7ee;color:#2a2f37;}
+.qa-btn:disabled{opacity:.4;cursor:default;}
+
+/* ===== ФАЗА 2: интервалы из сводного отчёта (над #ai-context) ===== */
+#ai-intervals{border-top:1px solid var(--border-l);background:#f7faff;
+  padding:5px 6px;display:flex;flex-direction:column;gap:4px;max-height:200px;overflow:auto;}
+.iv-hd{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.iv-master{font-size:10px;font-weight:600;line-height:1;padding:4px 8px;border-radius:5px;
+  cursor:pointer;border:1px solid var(--border-l);background:#fff;color:#2a2f37;
+  box-shadow:0 1px 0 rgba(0,0,0,.10);}
+.iv-master.on{background:#15539e;color:#fff;border-color:#15539e;}
+.iv-addall{font-size:10px;line-height:1;padding:4px 8px;border-radius:5px;cursor:pointer;
+  border:1px solid #2e8b57;background:#fff;color:#2e8b57;font-weight:600;}
+.iv-addall:hover{background:#eafaf0;}
+.iv-list{display:flex;flex-direction:column;gap:3px;}
+.iv-row{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:5px;
+  border:1px solid transparent;}
+.iv-row:hover{background:#eef3fb;}
+.iv-row.on{background:#eafaf0;border-color:#bfe6cf;}
+.iv-tg{font-size:12px;line-height:1;padding:1px 2px;border:none;background:none;cursor:pointer;
+  color:var(--muted);}
+.iv-tg.on{color:#2e8b57;}
+.iv-main{display:flex;align-items:baseline;gap:6px;flex:1;cursor:pointer;min-width:0;}
+.iv-time{font-family:var(--mono);font-size:10px;color:#15539e;font-weight:600;white-space:nowrap;}
+.iv-op{font-size:11px;color:#2a2f37;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.iv-meta{font-family:var(--mono);font-size:9.5px;color:var(--muted);white-space:nowrap;margin-left:auto;}
+.iv-warn{font-size:11px;color:#c0392b;cursor:help;}
+
+/* цветные бейджи каналов в реплике пользователя */
+.umsg-tags{display:inline-flex;gap:3px;margin-right:5px;vertical-align:middle;}
+.umsg-tag{color:#fff;font-size:9px;font-weight:600;padding:1px 5px;border-radius:8px;
+  font-family:var(--mono);}
+.umsg-win{font-family:var(--mono);font-size:10px;opacity:.85;margin-right:3px;}
+
+/* splitter */
+.resizer{height:6px;min-height:6px;flex:0 0 6px;cursor:row-resize;
+  background:linear-gradient(#e7e9ee,#d4d8df);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.resizer:hover{background:var(--accent);}
+.resizer.dragging{background:var(--accent-d);}
+body.row-resizing{cursor:row-resize;user-select:none;}
+/* горизонтальная граница внутри левой панели (дерево / AI) */
+.h-resizer{height:6px;min-height:6px;flex:0 0 6px;}
+/* вертикальная граница между левой панелью и контентом */
+.col-resizer{width:6px;min-width:6px;flex:0 0 6px;cursor:col-resize;
+  background:linear-gradient(90deg,#e7e9ee,#d4d8df);
+  border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.col-resizer:hover{background:var(--accent);}
+.col-resizer.dragging{background:var(--accent-d);}
+body.col-resizing{cursor:col-resize;user-select:none;}
+
+/* table */
+#grid{flex:1;min-height:0;width:100%;}
+
+/* ===== контекстное меню (дерево) + дропдаун истории ===== */
+.ctx-menu{position:fixed;z-index:1000;background:#fff;border:1px solid var(--border);
+  border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.22);padding:3px;min-width:170px;}
+.ctx-item{padding:5px 9px;font-size:11.5px;color:var(--txt);cursor:pointer;border-radius:3px;
+  white-space:nowrap;}
+.ctx-item:hover{background:var(--btn-h);}
+.ctx-item.cur{font-weight:600;color:var(--accent);}
+/* дропдаун истории под кнопкой тулбара (fixed — чтобы не обрезался overflow тулбара) */
+.tb-drop{position:fixed;max-height:260px;overflow:auto;font-family:var(--ui);}
+.tb-drop .ctx-item{font-family:var(--mono);font-size:10.5px;}
+
+/* ===== попап регулятора шума ===== */
+.tb-pop{position:fixed;z-index:1000;background:#fff;
+  border:1px solid var(--border);border-radius:5px;box-shadow:0 4px 14px rgba(0,0,0,.22);
+  padding:8px 10px;}
+.np-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);
+  white-space:nowrap;}
+.np-row input[type=range]{width:140px;}
+#noise-val{font-family:var(--mono);min-width:34px;text-align:right;color:var(--txt);}
+.spo-panel{display:flex;flex-direction:column;gap:6px;min-width:210px;}
+.spo-panel .np-row input[type=range]{width:110px;}
+.spo-btns{justify-content:flex-end;gap:6px;padding-top:2px;}
+#spo-inc-val{font-family:var(--mono);min-width:34px;text-align:right;color:var(--txt);}
+.spo-sel{flex:1;font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--txt);}
+
+/* ---------- посуточная лента (многосуточный .asc3) ---------- */
+.day-bar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;
+  padding:3px 6px;border-bottom:1px solid var(--border);background:#f6f7f9;}
+.day-bar .day-lbl{font-size:11px;color:var(--muted,#7a828c);margin-right:2px;}
+.day-chip{font-size:11px;line-height:1;padding:3px 8px;border:1px solid var(--border);
+  border-radius:11px;background:#fff;color:var(--txt);cursor:pointer;user-select:none;
+  white-space:nowrap;transition:background .12s,border-color .12s,color .12s;}
+.day-chip:hover{border-color:#8aa0c8;}
+.day-chip.sel{background:#3884ff;border-color:#3884ff;color:#fff;}
+.day-chip .day-n{opacity:.7;font-size:10px;margin-left:4px;}
+.day-bar .day-act{font-size:11px;padding:2px 8px;border:1px solid var(--border);
+  border-radius:6px;background:#fff;color:var(--txt);cursor:pointer;margin-left:auto;}
+.day-bar .day-act:hover{border-color:#8aa0c8;}

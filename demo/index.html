@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>КартЭдит — демо в браузере</title>
+
+  <!-- ECharts + Ag-Grid: локальные копии рядом с программой, интернет не нужен.
+       Суммы файлов записаны в static/vendor/vendor_lock.json -->
+  <script src="/demo/static/echarts.min.js"></script>
+  <script src="/demo/static/ag-grid-community.min.js"></script>
+  <link rel="stylesheet" href="/demo/static/ag-grid.css" />
+  <link rel="stylesheet" href="/demo/static/ag-theme-balham.css" />
+  <script>
+    /* #A23 (18.08.2026, аудит): график и таблица тянулись с ВНЕШНИХ CDN, а
+       поставка — ДЕСКТОПНАЯ; без интернета echarts.init падал в необработанном
+       исключении, и покупатель видел пустое окно без единого слова о причине.
+       Библиотеки положены рядом с программой (tools/vendor_assets.py), но
+       проверка остаётся: файл рядом может не загрузиться так же, как и чужой —
+       битая копия, вырезанный антивирусом кусок, урезанная сборка exe. Теги
+       выше синхронные, поэтому здесь уже точно известно, загрузились они или
+       нет. Текст сообщения ниже исправлен 06.09.2026: он всё ещё отправлял
+       покупателя «проверить интернет», хотя интернет тут ни при чём. */
+    window.__KE_LIBS_MISSING__ = [];
+    if (typeof window.echarts === "undefined") window.__KE_LIBS_MISSING__.push("ECharts — график");
+    if (typeof window.agGrid === "undefined") window.__KE_LIBS_MISSING__.push("Ag-Grid — таблица");
+  </script>
+
+  <link rel="icon" href="data:," />
+  <script>
+    /* ДЕМО (tools/build_demo.py): все /api/* уходят в /demo/api/* — заглушки
+       server/app.py; токен и версия статики — постоянные. */
+    window.ASC_TOKEN = "demo";
+    window.ASC_BOOT_VER = 1;
+    window.KE_DEFAULT_TITLE = "КартЭдит — ДЕМО";
+    (function () {
+      var orig = window.fetch.bind(window);
+      window.fetch = function (url, opts) {
+        if (typeof url === "string" && url.indexOf("/api/") === 0) url = "/demo" + url;
+        return orig(url, opts);
+      };
+    })();
+  </script>
+  <link rel="stylesheet" href="/demo/static/styles.css?v=09434d2ce4" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== TOOLBAR (минимальный) ===== -->
+    <div id="toolbar">
+      <div class="tb-group">
+        <button class="tb-icon" id="btn-open" title="Недоступно в демо — установите программу">📂</button>
+        <button class="tb-icon" id="btn-save" title="Недоступно в демо — установите программу">💾</button>
+        <button class="tb-icon" id="btn-saveas" title="Недоступно в демо — установите программу">🗄</button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group" style="position:relative">
+        <button class="tb-icon" id="btn-undo" title="Отменить (Ctrl+Z)">↶</button>
+        <!-- #A25 (18.08.2026, аудит): подсказка называла ТОЛЬКО Ctrl+X — единственное
+             из трёх сочетаний, которое конфликтует с системным «Вырезать», и при этом
+             прятала два стандартных. Само сочетание оставлено (алиас #v101), решение
+             убирать ли его — за владельцем. -->
+        <button class="tb-icon" id="btn-redo" title="Вернуть (Ctrl+Y или Ctrl+Shift+Z; работает и Ctrl+X)">↷</button>
+        <button class="tb-icon" id="btn-hist" title="История изменений" style="width:14px;font-size:9px">▾</button>
+        <div id="hist-menu" class="ctx-menu tb-drop" style="display:none"></div>
+      </div>
+      <!-- F17 (S-023): сравнение с исходником. Отсчёт — файл, каким его ОТКРЫЛИ
+           в этой сессии; сохранения его не двигают. Кнопка «вернуть участок»
+           живёт в панели выделения — ей нужен выбранный участок и каналы. -->
+      <div class="tb-group">
+        <button class="tb-icon" id="btn-diff" title="Сравнить с исходником: что изменилось с момента открытия файла. Сравниваются два файла на диске — несохранённые правки в отчёт не войдут">⇄</button>
+      </div>
+      <div class="tb-group">
+        <button class="tb-icon" id="btn-draw" title="Рисование (клавиша 0): тянуть ЛКМ — прорисовать/подрезать линию канала. Протяжка ровно вправо — спуско-подъёмная операция (трапеция)">✎</button>
+        <button class="tb-icon" id="btn-erase" title="Стёрка (ластик): тянуть ЛКМ по графику — значения активного канала обнуляются. Esc — выход">⌫</button>
+      </div>
+      <div class="tb-group" style="position:relative">
+        <button class="tb-icon" id="btn-noise" title="Шум (помехи) — ручное зашумление картограммы">〰</button>
+        <div id="noise-pop" class="tb-pop" style="display:none">
+          <div class="np-row">
+            <span>Шум</span>
+            <input type="range" id="noise-range" min="0" max="100" value="0" />
+            <span id="noise-val">0%</span>
+          </div>
+        </div>
+      </div>
+      <div class="tb-group" style="position:relative">
+        <button class="tb-icon" id="btn-dim" title="Диммер — видимость второстепенных линий (Вес на крюке всегда ярче)">🔅</button>
+        <div id="dim-pop" class="tb-pop" style="display:none">
+          <div class="np-row">
+            <span>Фон</span>
+            <input type="range" id="dim-range" min="5" max="100" value="60" />
+            <span id="dim-val">60%</span>
+          </div>
+        </div>
+      </div>
+      <div class="tb-group tb-time">
+        <input type="datetime-local" id="timeStart" step="1" class="tb-dt" title="Начало окна просмотра" />
+        <span class="tb-dash">—</span>
+        <input type="datetime-local" id="timeEnd" step="1" class="tb-dt" title="Конец окна просмотра" />
+      </div>
+      <span class="tb-title">КартЭдит — ДЕМО</span>
+      <div class="tb-group" id="demo-cta" style="margin-left:auto;gap:6px">
+        <a href="/download" class="tb-icon" style="width:auto;padding:0 10px;text-decoration:none;background:#2c7a3f;color:#fff;border-color:#2c7a3f" title="Полная версия для Windows, 7 дней бесплатно">Скачать — пробная версия 7 дней</a>
+        <a href="/pay" class="tb-icon" style="width:auto;padding:0 10px;text-decoration:none" title="Купить лицензию">Купить</a>
+      </div>
+      <div class="tb-group" id="license-group" style="position:relative;display:none">
+        <button class="tb-icon tb-license-badge" id="btn-license" title="Статус лицензии — нажмите, чтобы активировать ключ">…</button>
+        <div id="license-pop" class="tb-pop" style="display:none">
+          <div class="spo-panel">
+            <div class="np-row" id="license-status-row">Проверка статуса…</div>
+            <div class="np-row" id="license-exp-row" style="display:none"></div>
+            <div class="np-row" id="license-key-row" style="display:none;cursor:pointer"
+                 title="Нажмите, чтобы скопировать. Номер лицензии называют при обращении в поддержку.">Номер лицензии: <b id="license-key-id">—</b> ⧉</div>
+            <div class="np-row" id="license-hwid-row" style="cursor:pointer"
+                 title="Нажмите, чтобы скопировать. Этот код нужен продавцу для выпуска лицензионного ключа.">Код компьютера: <b id="license-hwid">…</b> ⧉</div>
+            <div class="np-row">
+              <input type="text" id="license-key-input" class="spo-sel" placeholder="Вставьте лицензионный ключ" style="flex:1" />
+            </div>
+            <div class="np-row spo-btns">
+              <button class="tb-icon" id="license-activate-btn" style="width:auto;padding:0 10px">Активировать</button>
+            </div>
+            <div class="np-row" id="license-msg" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN WORKSPACE ===== -->
+    <div id="workspace">
+
+      <!-- LEFT SIDEBAR: дерево (40%) + AI (60%) -->
+      <aside id="sidebar">
+
+        <!-- верх: дерево бригад (40%) -->
+        <div id="tree-section">
+          <div class="tree-header">
+            <span class="tree-col-brigade">Бригада</span>
+            <span class="tree-col-type" title="Месторождение / № скважины — ПКМ для правки">Месторожд./скв</span>
+          </div>
+          <div id="tree" class="tree-body"></div>
+        </div>
+
+        <!-- перетаскиваемая граница дерево / AI -->
+        <div id="tree-resizer" class="resizer h-resizer" title="Потяните — высота дерева / AI"></div>
+
+        <!-- низ: AI-ассистент -->
+        <div id="ai-section">
+          <div class="ai-head"><span class="ai-title">AI-Ассистент</span></div>
+          <div class="ai-messages" id="ai-messages"></div>
+          <!-- интервалы из сводного отчёта (ФАЗА 2): тумблеры + клик = подсветка окна -->
+          <div id="ai-intervals" style="display:none"></div>
+          <!-- контекст выделения: массив каналов из ПКМ-выделения графика + нажатые токены -->
+          <div id="ai-context" style="display:none"></div>
+          <div class="ai-input-row">
+            <div class="ai-input-wrap">
+              <textarea id="ai-input" rows="1" placeholder="Ассистент недоступен в демо"></textarea>
+              <button id="ai-clip" class="ai-ic" title="Прикрепить: сводный отчёт (.txt/.csv → интервалы работ) или скан картограммы (оцифровка ИИ)">📎</button>
+              <button id="ai-mic" class="ai-ic" title="Голосовой ввод (скоро)">🎤</button>
+              <button id="ai-send" class="ai-ic ai-send-ic" title="Отправить">➤</button>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- перетаскиваемая граница панель / контент -->
+      <div id="side-resizer" class="col-resizer" title="Потяните — ширина левой панели"></div>
+
+      <!-- RIGHT CONTENT: на всю оставшуюся ширину -->
+      <section id="content">
+
+        <!-- график -->
+        <div id="charts-panel" class="panel">
+          <div class="subhdr">
+            <span id="file-title" class="file-title" title="Имя открытого .asc3">&nbsp;</span>
+            <div id="channel-tabs" class="chan-tabs"></div>
+          </div>
+          <!-- посуточная лента: тумблеры суток (показ/сохранение выбранных суток) -->
+          <div id="day-bar" class="day-bar" style="display:none"></div>
+          <div id="chart"></div>
+        </div>
+
+        <!-- сплиттер -->
+        <div id="v-resizer" class="resizer" title="Потяните, чтобы изменить высоту"></div>
+
+        <!-- таблица: одна чистая, без вкладок -->
+        <div id="table-panel" class="panel">
+          <div id="grid" class="ag-theme-balham"></div>
+        </div>
+
+      </section>
+
+    </div><!-- /workspace -->
+  </div><!-- /app -->
+
+  <script>
+    /* #A23: сообщение вместо пустого окна. Стоит ДО app.js сознательно — если
+       библиотек нет, app.js всё равно упадёт, и объяснение должно быть на
+       экране раньше. Адрес поддержки — тот же, что в оферте. */
+    (function () {
+      var miss = window.__KE_LIBS_MISSING__ || [];
+      if (!miss.length) return;
+      var d = document.createElement("div");
+      d.style.cssText = "position:fixed;inset:0;z-index:99999;background:#11161d;color:#e6edf5;" +
+        "font:14px/1.5 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:32px";
+      var box = document.createElement("div");
+      box.style.cssText = "max-width:620px";
+      var h = document.createElement("div");
+      h.style.cssText = "font-size:18px;font-weight:600;margin-bottom:12px";
+      h.textContent = "Не загрузились компоненты интерфейса";
+      var p1 = document.createElement("p");
+      p1.textContent = "Не удалось загрузить: " + miss.join(", ") + ". Эти компоненты входят в состав " +
+        "программы и лежат рядом с ней — интернет для них не нужен.";
+      var p2 = document.createElement("p");
+      p2.textContent = "Что сделать: запустите программу заново. Если окно снова пустое — файлы " +
+        "интерфейса повреждены или удалены антивирусом; переустановите программу из дистрибутива " +
+        "с сайта и проверьте карантин антивируса.";
+      var p3 = document.createElement("p");
+      p3.style.cssText = "opacity:.75";
+      p3.textContent = "Поддержка: support@kartedit.ru";
+      box.appendChild(h); box.appendChild(p1); box.appendChild(p2); box.appendChild(p3);
+      d.appendChild(box);
+      document.body.appendChild(d);
+    })();
+  </script>
+  <!-- водяной знак ДЕМО -->
+  <div style="position:fixed;top:45%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);
+              font:bold 110px sans-serif;color:rgba(120,120,120,.08);z-index:9998;
+              pointer-events:none;user-select:none;white-space:nowrap">ДЕМО</div>
+  <div id="demo-toast" style="display:none;position:fixed;left:50%;top:64px;transform:translateX(-50%);
+       max-width:520px;background:#1d2733;color:#fff;font:14px/1.45 system-ui,sans-serif;padding:12px 16px;
+       border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:10000"></div>
+  <script>
+    /* ДЕМО: открыть/сохранить недоступны. Перехват на window в фазе захвата —
+       раньше любых обработчиков app.js, в каком бы порядке они ни вешались. */
+    (function () {
+      var msg = "Недоступно в демо-версии. Чтобы открывать и сохранять свои файлы .asc3, установите программу: бесплатный пробный период 7 дней (кнопка «Скачать» вверху).", timer = null;
+      function say() {
+        var t = document.getElementById("demo-toast");
+        t.textContent = msg; t.style.display = "";
+        clearTimeout(timer); timer = setTimeout(function () { t.style.display = "none"; }, 6000);
+      }
+      ["btn-open", "btn-save", "btn-saveas"].forEach(function (id) {
+        var b = document.getElementById(id);
+        if (b) b.style.opacity = ".45";
+      });
+      window.addEventListener("click", function (e) {
+        var b = e.target && e.target.closest && e.target.closest("#btn-open,#btn-save,#btn-saveas");
+        if (!b) return;
+        e.stopImmediatePropagation(); e.preventDefault(); say();
+      }, true);
+      window.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && ["s", "o", "S", "O", "ы", "щ", "Ы", "Щ"].indexOf(e.key) >= 0) {
+          e.preventDefault(); e.stopImmediatePropagation(); say();
+        }
+      }, true);
+    })();
+    /* ДЕМО: при открытии выбраны ПЕРВЫЕ сутки, а не обе сразу — выделенные двое суток
+       выглядят непонятно. Вторые сутки посетитель выбирает сам кликом в дереве.
+       Это обычный клик по строке суток, то есть ровно то, что сделал бы пользователь. */
+    (function () {
+      var tries = 0, h = setInterval(function () {
+        var d = document.querySelector('#tree .tree-child[data-day="0"]');
+        if (d) { clearInterval(h); d.click(); }
+        else if (++tries > 100) clearInterval(h);
+      }, 100);
+    })();
+  </script>
+  <script src="/demo/static/app.js?v=b0b66c04c8"></script>
+  <!-- 2026-07-19: версия статики больше НЕ бампается руками (?v=NN) — main.py
+       подставляет её сам по mtime app.js/styles.css при каждой отдаче index().
+       Баннер в углу — чтобы на КАЖДОМ скрине живого теста было видно, что реально
+       грузилось (закрывает вопрос "а точно ли это свежий код?" раз и навсегда). -->
+  <!-- Н9-04 (09.08.2026): контакт поддержки ВНУТРИ программы. Живая проверка
+       ops_log_probe.py вскрыла, что в отдаваемом сервером интерфейсе не было ни
+       почты, ни телеграма — старая regex-проверка была ложно-зелёной, она
+       матчила версию пакета ag-grid-community@31.3.2. У покупателя, у которого
+       программа сломалась, не должно быть нужды искать адрес на сайте. -->
+  <div id="support-link"
+       style="position:fixed;right:4px;bottom:16px;font:10px monospace;z-index:9999;opacity:.65">
+    <!-- #A24 (18.08.2026, аудит): здесь стоял ЛИЧНЫЙ gmail владельца, тогда как
+         оферта (server/static/offer.html), сайт и проверка Н10-03 называют
+         покупателю support@kartedit.ru. Покупатель, у которого сломалась
+         программа, писал по адресу, которого нет ни в одном документе сделки. -->
+    <a href="mailto:support@kartedit.ru?subject=%D0%9A%D0%B0%D1%80%D1%82%D0%AD%D0%B4%D0%B8%D1%82%20%E2%80%94%20%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%BA%D0%B0"
+       title="Написать в поддержку. К письму приложите архив диагностики: он собирается кнопкой в меню и лежит в папке данных приложения."
+       style="color:#7aa7d8;text-decoration:none">поддержка: support@kartedit.ru</a>
+  </div>
+  <div id="build-ver"
+       title="Версия статики (app.js/styles.css), авто по времени файла. Если тут старое время — жёстко обнови (Ctrl+F5) или проверь, что редактируешь тот же файл, который открыт."
+       style="position:fixed;right:4px;bottom:2px;font:10px monospace;color:#999;opacity:.55;z-index:9999;pointer-events:none;user-select:text">демо · b0b66c04c8</div>
+</body>
+</html>

@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>КартЭдит — контроль качества данных телеметрии</title>
+<meta name="description" content="Настольное ПО для анализа и коррекции данных телеметрии в формате .asc3. Организациям — договор, счёт и акт, безналичный расчёт. Файлы обрабатываются на вашем компьютере.">
+<meta name="theme-color" content="#0b1626">
+<meta property="og:title" content="КартЭдит — контроль качества данных телеметрии">
+<meta property="og:description" content="Коррекция помех и ошибок расшифровки в картограммах .asc3. Офлайн, на вашем компьютере.">
+<meta property="og:image" content="https://kartedit.ru/assets/editor.webp">
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<!-- Сторонние ресурсы не подключаются (§11.1 Политики ПДн): шрифты системные,
+     стили, скрипты и картинки — свои, с этого же домена. -->
+<style>
+  /* ---------- Дизайн-токены (описание — commercial/brand/ДИЗАЙН_СИСТЕМА.md) ---------- */
+  :root {
+    --navy-900:#070f1c; --navy-800:#0b1626; --navy-700:#12223a; --navy-600:#1b3252;
+    --signal:#3d8bfd; --signal-2:#79b8ff; --gold:#f0b44c; --mint:#2fc29b; --noise:#8a9bb8;
+    --r-sm:10px; --r-md:16px; --r-lg:24px;
+    --shadow-1:0 1px 2px rgba(10,20,40,.06),0 8px 24px rgba(10,20,40,.06);
+    --shadow-2:0 2px 6px rgba(10,20,40,.08),0 30px 60px -20px rgba(10,20,40,.35);
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --font-d:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    --mono:"Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+  }
+  :root, [data-theme="light"] {
+    --bg:#f5f7fb; --bg-2:#ffffff; --tx:#121b2a; --mut:#5a6678; --line:#e2e8f1;
+    --card:#ffffff; --card-line:#e4e9f2; --glass:rgba(255,255,255,.72); --chip:#eef3fb;
+  }
+  [data-theme="dark"] {
+    --bg:#08111f; --bg-2:#0c1729; --tx:#e7edf6; --mut:#97a6bc; --line:#1c2c44;
+    --card:#0f1c31; --card-line:#1e3050; --glass:rgba(10,20,36,.72); --chip:#13243d;
+    --shadow-1:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  }
+  * { box-sizing:border-box; margin:0; }
+  html { scroll-behavior:smooth; scroll-padding-top:84px; -webkit-text-size-adjust:100%; }
+  body { font-family:var(--font); color:var(--tx); background:var(--bg); line-height:1.6;
+         -webkit-font-smoothing:antialiased; overflow-x:hidden; transition:background .3s, color .3s; }
+  a { color:var(--signal); }
+  img { max-width:100%; display:block; }
+  .wrap { max-width:1160px; margin:0 auto; padding:0 24px; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  :focus-visible { outline:2px solid var(--signal); outline-offset:3px; border-radius:6px; }
+
+  /* ---------- Полоса прогресса прокрутки (scroll-driven animation) ---------- */
+  .progress { position:fixed; inset:0 0 auto 0; height:3px; z-index:60; transform-origin:0 50%;
+              background:linear-gradient(90deg,var(--signal),var(--gold)); transform:scaleX(0); }
+  @supports (animation-timeline: scroll()) {
+    .progress { animation:grow linear both; animation-timeline:scroll(root); }
+    @keyframes grow { to { transform:scaleX(1); } }
+  }
+
+  /* ---------- Шапка: «стекло» ---------- */
+  header.top { position:fixed; inset:0 0 auto 0; z-index:50; transition:background .3s, box-shadow .3s; }
+  header.top.solid { background:var(--glass); backdrop-filter:saturate(1.6) blur(14px);
+                     -webkit-backdrop-filter:saturate(1.6) blur(14px); box-shadow:0 1px 0 var(--line); }
+  .nav { display:flex; align-items:center; gap:28px; height:68px; }
+  .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:#fff;
+           font-family:var(--font-d); font-weight:800; font-size:1.18rem; letter-spacing:.2px; }
+  header.solid .brand { color:var(--tx); }
+  .brand b { font-weight:inherit; }
+  .brand span { color:var(--gold); }
+  .brand svg { width:34px; height:34px; flex:none; }
+  .brand .trace { stroke-dasharray:120; stroke-dashoffset:120; animation:draw 1.6s .2s var(--ease) forwards; }
+  @keyframes draw { to { stroke-dashoffset:0; } }
+  .links { display:flex; gap:22px; margin-left:auto; }
+  .links a { color:rgba(232,239,248,.82); text-decoration:none; font-size:.94rem; font-weight:500; }
+  header.solid .links a { color:var(--mut); }
+  .links a:hover { color:var(--gold) !important; }
+  .nav-act { display:flex; align-items:center; gap:10px; }
+  .icon-btn { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; cursor:pointer;
+              border:1px solid rgba(255,255,255,.22); background:transparent; color:#e8eef6; }
+  header.solid .icon-btn { border-color:var(--line); color:var(--tx); }
+  .icon-btn svg { width:19px; height:19px; }
+  .burger { display:none; }
+  /* Мобильное меню — нативный Popover API */
+  #menu { margin:76px 16px auto auto; padding:10px; border:1px solid var(--line); border-radius:var(--r-md);
+          background:var(--bg-2); color:var(--tx); box-shadow:var(--shadow-2); min-width:220px; }
+  #menu a { display:block; padding:10px 14px; color:var(--tx); text-decoration:none; border-radius:10px; }
+  #menu a:hover { background:var(--chip); }
+  #menu::backdrop { background:rgba(5,10,20,.35); backdrop-filter:blur(2px); }
+
+  /* ---------- Кнопки ---------- */
+  .btn { --b:var(--signal); display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+         font-weight:650; font-size:1rem; padding:14px 24px; border-radius:12px; border:1px solid transparent;
+         transition:transform .2s var(--ease), box-shadow .2s, background .2s; cursor:pointer; }
+  .btn svg { width:18px; height:18px; }
+  .btn.main { background:var(--b); color:#fff; box-shadow:0 8px 24px -8px rgba(61,139,253,.7); }
+  .btn.main:hover { transform:translateY(-2px); box-shadow:0 14px 30px -10px rgba(61,139,253,.85); }
+  .btn.gold { background:var(--gold); color:#1a1205; box-shadow:0 8px 24px -8px rgba(240,180,76,.7); }
+  .btn.gold:hover { transform:translateY(-2px); }
+  .btn.ghost { color:#e6edf7; border-color:rgba(255,255,255,.3); background:rgba(255,255,255,.04); }
+  .btn.ghost:hover { background:rgba(255,255,255,.1); }
+  .btn.line { color:var(--tx); border-color:var(--line); background:var(--bg-2); }
+  .btn.line:hover { border-color:var(--signal); }
+  .btn.sm { padding:9px 16px; font-size:.92rem; border-radius:10px; }
+
+  /* ---------- Первый экран ---------- */
+  .hero { position:relative; overflow:hidden; color:#eef2f7; isolation:isolate;
+          background:radial-gradient(1200px 600px at 80% -10%,#1d3d6c 0%,transparent 60%),
+                     linear-gradient(165deg,var(--navy-800) 0%,var(--navy-700) 65%,#15294a 100%); }
+  /* Сцена «лента данных»: свой код на canvas, без сторонних библиотек.
+     При «уменьшить движение» — один статический кадр. */
+  #ribbon { position:absolute; inset:0; width:100%; height:100%; display:block; z-index:-2; }
+  .hero::after { content:""; position:absolute; inset:0; pointer-events:none; z-index:-1;
+                 background:linear-gradient(90deg,var(--navy-800) 0%,rgba(11,22,38,.9) 36%,
+                            rgba(11,22,38,.25) 72%,rgba(11,22,38,.5) 100%); }
+  .hero-in { padding:150px 0 120px; max-width:720px; }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 12px 6px 8px; border-radius:999px;
+             background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); font-size:.86rem;
+             color:#cfdaea; margin-bottom:22px; backdrop-filter:blur(6px); }
+  .eyebrow i { width:8px; height:8px; border-radius:50%; background:var(--mint);
+               box-shadow:0 0 0 0 rgba(47,194,155,.6); animation:ping 2.4s infinite; }
+  @keyframes ping { 70%,100% { box-shadow:0 0 0 10px rgba(47,194,155,0); } }
+  h1 { font-family:var(--font-d); font-size:clamp(2.1rem,4.6vw,3.6rem); line-height:1.08; font-weight:800;
+       letter-spacing:-.02em; margin-bottom:22px; text-wrap:balance; }
+  h1 .grad { background:linear-gradient(90deg,var(--signal-2),var(--gold)); -webkit-background-clip:text;
+             background-clip:text; color:transparent; }
+  .lead { font-size:clamp(1.02rem,1.5vw,1.18rem); color:#c3cede; margin-bottom:34px; max-width:620px; text-wrap:pretty; }
+  .btns { display:flex; gap:12px; flex-wrap:wrap; }
+
+  /* ---------- Скриншот: окно, которое «ложится» при прокрутке ---------- */
+  .stage { position:relative; margin-top:-70px; perspective:1600px; z-index:3; }
+  .window { border-radius:14px; overflow:hidden; background:#fff; box-shadow:var(--shadow-2);
+            border:1px solid rgba(15,30,60,.14); transform-origin:50% 0; }
+  .window .bar { height:34px; background:linear-gradient(#f2f5f9,#e7ecf3); display:flex; align-items:center;
+                 gap:7px; padding:0 14px; border-bottom:1px solid #d9e0ea; }
+  .window .bar i { width:11px; height:11px; border-radius:50%; background:#d5dbe4; }
+  .window .bar span { margin-left:12px; font-size:.78rem; color:#6a7486; font-family:var(--mono); }
+  .window img { width:100%; height:auto; aspect-ratio:1600/955; }
+  @supports (animation-timeline: view()) {
+    .window { animation:lay linear both; animation-timeline:view(); animation-range:entry 0% cover 45%; }
+    @keyframes lay { from { transform:rotateX(24deg) scale(.92); opacity:.55; } to { transform:none; opacity:1; } }
+  }
+  .caption { text-align:center; color:var(--mut); font-size:.86rem; margin-top:14px; }
+
+  /* ---------- Секции ---------- */
+  section { padding:110px 0 0; }
+  .kicker { font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; color:var(--signal); font-weight:700; margin-bottom:12px; }
+  h2 { font-family:var(--font-d); font-size:clamp(1.6rem,3vw,2.4rem); line-height:1.15; letter-spacing:-.015em;
+       margin-bottom:16px; text-wrap:balance; }
+  .sub { color:var(--mut); font-size:1.06rem; max-width:680px; margin-bottom:42px; text-wrap:pretty; }
+  .center { text-align:center; } .center .sub { margin-inline:auto; }
+
+  /* Появление при прокрутке: CSS view-timeline, иначе — IntersectionObserver.
+     Без JS и без поддержки всё видно сразу. */
+  @supports (animation-timeline: view()) {
+    .rv { animation:rise linear both; animation-timeline:view(); animation-range:entry 5% cover 28%; }
+  }
+  html.io .rv { opacity:0; transform:translateY(28px); transition:opacity .8s var(--ease), transform .8s var(--ease); }
+  html.io .rv.in { opacity:1; transform:none; }
+  @keyframes rise { from { opacity:0; transform:translateY(34px); } to { opacity:1; transform:none; } }
+
+  /* ---------- Карточки (bento) с 3D-наклоном и «прожектором» ---------- */
+  .bento { display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
+  .card { --rx:0deg; --ry:0deg; --mx:50%; --my:50%; position:relative; grid-column:span 2; container-type:inline-size;
+          background:var(--card); border:1px solid var(--card-line); border-radius:var(--r-md); padding:26px;
+          box-shadow:var(--shadow-1); transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+          transition:transform .25s var(--ease), border-color .25s; overflow:hidden; }
+  .card::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .3s;
+                  background:radial-gradient(380px circle at var(--mx) var(--my),rgba(61,139,253,.13),transparent 60%); }
+  .card:hover { border-color:color-mix(in srgb,var(--signal) 45%,var(--card-line)); }
+  .card:hover::before { opacity:1; }
+  .card.wide { grid-column:span 3; }
+  .card .ic { width:46px; height:46px; border-radius:13px; display:grid; place-items:center; margin-bottom:18px;
+              background:linear-gradient(135deg,color-mix(in srgb,var(--signal) 20%,transparent),color-mix(in srgb,var(--gold) 18%,transparent));
+              color:var(--signal); }
+  .card .ic svg { width:24px; height:24px; }
+  .card h3 { font-size:1.08rem; margin-bottom:8px; font-family:var(--font-d); }
+  .card p { color:var(--mut); font-size:.95rem; }
+  .card p + p { margin-top:10px; }
+  .card .kbd { font-family:var(--mono); font-size:.8rem; padding:2px 7px; border-radius:6px; background:var(--chip);
+               border:1px solid var(--card-line); color:var(--tx); }
+  @container (min-width:420px) { .card h3 { font-size:1.2rem; } }
+
+  /* ---------- Законность ---------- */
+  .legal { position:relative; border-radius:var(--r-lg); padding:56px; color:#e7edf6; overflow:hidden;
+           background:radial-gradient(700px 400px at 100% 0%,rgba(240,180,76,.16),transparent 60%),
+                      radial-gradient(600px 400px at 0% 100%,rgba(61,139,253,.2),transparent 60%),var(--navy-800); }
+  .legal .kicker { color:var(--gold); }
+  .legal .sub { color:#aebbd0; }
+  .legal-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .legal-grid.two { grid-template-columns:repeat(2,1fr); }
+  .legal-item { background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.1); border-radius:var(--r-md);
+                padding:24px; backdrop-filter:blur(8px); }
+  .legal-item h3 { font-size:1.04rem; margin-bottom:8px; display:flex; gap:10px; align-items:center; }
+  .legal-item h3 svg { width:20px; height:20px; color:var(--gold); flex:none; }
+  .legal-item p { color:#b5c2d6; font-size:.94rem; }
+  .legal-item a { color:var(--gold); }
+
+  /* ---------- Кому ---------- */
+  .tabs { display:flex; gap:8px; padding:6px; border-radius:14px; background:var(--chip); width:max-content; max-width:100%;
+          overflow-x:auto; margin-bottom:22px; scrollbar-width:none; }
+  .tabs button { border:0; background:transparent; color:var(--mut); font:inherit; font-weight:600; padding:10px 18px;
+                 border-radius:10px; cursor:pointer; white-space:nowrap; transition:background .2s,color .2s; }
+  .tabs button[aria-selected="true"] { background:var(--bg-2); color:var(--tx); box-shadow:var(--shadow-1); }
+  .panel { display:grid; grid-template-columns:1.1fr .9fr; gap:28px; align-items:center; background:var(--card);
+           border:1px solid var(--card-line); border-radius:var(--r-lg); padding:36px; box-shadow:var(--shadow-1); }
+  .panel[hidden] { display:none; }
+  .panel h3 { font-family:var(--font-d); font-size:1.4rem; margin-bottom:12px; }
+  .panel ul { list-style:none; padding:0; display:grid; gap:12px; margin-top:18px; }
+  .panel li { display:flex; gap:12px; color:var(--mut); }
+  .panel li svg { flex:none; width:20px; height:20px; color:var(--mint); margin-top:3px; }
+  .panel .art { border-radius:var(--r-md); min-height:220px; display:grid; place-items:center; padding:24px;
+                background:linear-gradient(135deg,color-mix(in srgb,var(--signal) 12%,var(--bg)),color-mix(in srgb,var(--gold) 12%,var(--bg))); }
+  .panel .art svg { width:100%; max-width:300px; height:auto; }
+
+  /* ---------- Цена ---------- */
+  .price-wrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .price { position:relative; border-radius:var(--r-lg); padding:34px; background:var(--card); border:1px solid var(--card-line);
+           box-shadow:var(--shadow-1); }
+  .price.hi { border:1px solid transparent; background:linear-gradient(var(--card),var(--card)) padding-box,
+              linear-gradient(135deg,var(--signal),var(--gold)) border-box; }
+  .price .tag { position:absolute; top:-12px; left:28px; padding:4px 12px; border-radius:999px; font-size:.78rem; font-weight:700;
+                background:linear-gradient(90deg,var(--signal),var(--gold)); color:#fff; }
+  .price h3 { font-size:1.12rem; margin-bottom:6px; }
+  .price .amt { font-family:var(--font-d); font-size:2.8rem; font-weight:800; letter-spacing:-.02em; line-height:1.1; margin:12px 0 4px; }
+  .price .amt small { font-size:1rem; font-weight:500; color:var(--mut); letter-spacing:0; }
+  .price ul { list-style:none; padding:0; margin:20px 0 26px; display:grid; gap:9px; }
+  .price li { display:flex; gap:10px; color:var(--mut); font-size:.95rem; }
+  .price li svg { flex:none; width:18px; height:18px; color:var(--signal); margin-top:3px; }
+  .muted { color:var(--mut); font-size:.88rem; }
+
+  /* ---------- Вопросы ---------- */
+  .faq { max-width:820px; margin:0 auto; display:grid; gap:10px; }
+  details { background:var(--card); border:1px solid var(--card-line); border-radius:14px; padding:0 22px;
+            transition:border-color .2s; }
+  details[open] { border-color:color-mix(in srgb,var(--signal) 45%,var(--card-line)); }
+  summary { cursor:pointer; list-style:none; padding:18px 0; font-weight:600; display:flex; justify-content:space-between; gap:16px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:"+"; font-size:1.4rem; line-height:1; color:var(--signal); transition:transform .25s var(--ease); }
+  details[open] summary::after { transform:rotate(45deg); }
+  details p { color:var(--mut); padding-bottom:18px; font-size:.96rem; }
+  details::details-content { block-size:0; overflow:clip; transition:block-size .35s var(--ease), content-visibility .35s allow-discrete; }
+  details[open]::details-content { block-size:auto; }
+  @supports (interpolate-size: allow-keywords) { :root { interpolate-size:allow-keywords; } }
+
+  /* ---------- Призыв ---------- */
+  .cta { margin:110px 0 0; border-radius:var(--r-lg); padding:56px; display:flex; align-items:center; justify-content:space-between;
+         gap:28px; flex-wrap:wrap; color:#eef2f7; position:relative; overflow:hidden;
+         background:linear-gradient(120deg,#1a4fa3 0%,var(--navy-700) 55%,#3a2a0d 130%); }
+  .cta::before { content:""; position:absolute; inset:-40%; background:conic-gradient(from 0deg,transparent,rgba(240,180,76,.16),transparent 30%);
+                 animation:spin 14s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .cta > * { position:relative; }
+  .cta h2 { margin-bottom:8px; }
+  .cta p { color:#c7d3e4; max-width:560px; }
+  .cta p a { color:var(--gold); }
+
+  /* ---------- Подвал ---------- */
+  footer { margin-top:110px; background:var(--navy-900); color:#9fb0c6; font-size:.9rem; padding:48px 0 40px; }
+  footer a { color:#c9d5e6; text-decoration:none; } footer a:hover { color:var(--gold); }
+  footer .row { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  footer .brand { color:#fff; margin-bottom:12px; }
+  footer nav { display:flex; flex-direction:column; gap:6px; text-align:right; }
+
+  /* ---------- Адаптивность ---------- */
+  @media (max-width:960px) {
+    .links { display:none; } .burger { display:grid; }
+    .bento { grid-template-columns:1fr 1fr; } .card, .card.wide { grid-column:span 1; }
+    .legal-grid, .legal-grid.two { grid-template-columns:1fr; }
+    .panel { grid-template-columns:1fr; } .panel .art { display:none; }
+    }
+  @media (max-width:640px) {
+    .wrap { padding:0 16px; }
+    .hero-in { padding:116px 0 100px; }
+    .hero::after { background:linear-gradient(90deg,var(--navy-800) 0%,rgba(11,22,38,.88) 60%,rgba(11,22,38,.7) 100%); }
+    .nav-act .btn { display:none; }
+    .bento, .price-wrap { grid-template-columns:1fr; }
+    .legal, .cta { padding:32px 22px; } .panel { padding:24px; } .price { padding:28px 22px; }
+    section { padding-top:80px; }
+    footer nav { text-align:left; }
+    .btns .btn { flex:1 1 100%; justify-content:center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+    h1 .w { opacity:1; transform:none; }
+    html { scroll-behavior:auto; }
+    .brand .trace { stroke-dashoffset:0; }
+  }
+
+  /* ---------- Свежие приёмы (см. ДИЗАЙН_СИСТЕМА.md, п. 5) ---------- */
+  @property --ang { syntax:"<angle>"; initial-value:0deg; inherits:false; }
+  .price.hi { border:2px solid transparent; animation:rot 8s linear infinite;
+              background:linear-gradient(var(--card),var(--card)) padding-box,
+                         conic-gradient(from var(--ang),var(--signal),var(--gold),var(--mint),var(--signal)) border-box; }
+  @keyframes rot { to { --ang:360deg; } }
+  .hero::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; mix-blend-mode:screen;
+                  background:radial-gradient(520px circle at var(--px,72%) var(--py,32%),rgba(61,139,253,.28),transparent 62%); }
+  h1 .w { display:inline-block; opacity:0; transform:translateY(.55em); animation:wd .9s var(--ease) forwards;
+          animation-delay:calc(var(--i)*.08s + .12s); }
+  h1 .grad .w { color:color-mix(in srgb,var(--signal-2),var(--gold) calc(var(--k)*25%)); }
+  @keyframes wd { to { opacity:1; transform:none; } }
+  .btn.mag { transition:transform .25s var(--ease), box-shadow .2s, background .2s; will-change:transform; }
+
+  /* Сценарий «как это выглядит»: холст приклеен, шаги листаются */
+  .story { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:48px; align-items:start; }
+  .story-stage { position:sticky; top:96px; order:2; }
+  .stage-card { border-radius:var(--r-lg); overflow:hidden; background:var(--navy-800); border:1px solid var(--card-line); box-shadow:var(--shadow-2); }
+  .stage-card .hd { display:flex; justify-content:space-between; gap:12px; padding:12px 16px; color:#aebbd0; font-size:.82rem;
+                    border-bottom:1px solid rgba(255,255,255,.08); font-family:var(--mono); }
+  .stage-card .hd b { color:var(--gold); font-weight:600; }
+  .stage-card canvas { display:block; width:100%; height:400px; }
+  .st { min-height:72vh; display:flex; flex-direction:column; justify-content:center; opacity:.32; transition:opacity .45s; }
+  .st.on { opacity:1; }
+  .st .num { font-family:var(--font-d); font-weight:800; font-size:.9rem; color:var(--signal); letter-spacing:.1em; margin-bottom:10px; }
+  .st h3 { font-family:var(--font-d); font-size:1.5rem; line-height:1.2; margin-bottom:12px; }
+  .st p { color:var(--mut); max-width:440px; }
+  .st .kc { margin-top:16px; }
+  kbd { font-family:var(--mono); font-size:.82rem; display:inline-block; min-width:2.1em; text-align:center; padding:5px 10px;
+        border-radius:8px; color:var(--tx); background:var(--bg-2); border:1px solid var(--card-line);
+        border-bottom-width:3px; box-shadow:0 1px 0 rgba(0,0,0,.04); transition:transform .08s, background .12s, border-color .12s; }
+  kbd.on { transform:translateY(2px); border-bottom-width:1px; background:var(--gold); border-color:var(--gold); color:#1a1205; }
+  .kc i, .kcaps i { font-style:normal; color:var(--mut); margin:0 6px; }
+
+  .keys { display:grid; grid-template-columns:repeat(2,1fr); gap:12px 16px; max-width:900px; margin:0 auto; }
+  .krow { display:flex; align-items:center; justify-content:space-between; gap:16px; background:var(--card); border:1px solid var(--card-line);
+          border-radius:14px; padding:14px 18px; box-shadow:var(--shadow-1); }
+  .krow > span { color:var(--mut); font-size:.95rem; text-align:right; }
+  .kcaps { display:flex; align-items:center; flex:none; }
+
+  dialog#pal { margin:12vh auto auto; width:min(560px,calc(100vw - 32px)); padding:0; border:1px solid var(--line); border-radius:var(--r-md);
+               background:var(--bg-2); color:var(--tx); box-shadow:var(--shadow-2); overflow:hidden; }
+  dialog#pal::backdrop { background:rgba(5,10,20,.5); backdrop-filter:blur(3px); }
+  #pal input { width:100%; border:0; outline:0; padding:18px 20px; font:inherit; font-size:1.05rem; background:transparent; color:inherit;
+               border-bottom:1px solid var(--line); }
+  #pal ul { list-style:none; padding:8px; margin:0; max-height:50vh; overflow:auto; }
+  #pal li a { display:flex; justify-content:space-between; gap:12px; padding:11px 14px; border-radius:10px; color:var(--tx); text-decoration:none; }
+  #pal li a:hover, #pal li a.sel { background:var(--chip); }
+  #pal li small { color:var(--mut); }
+  .kbtn { width:auto; padding:0 12px; font-family:var(--mono); font-size:.78rem; }
+
+  @media (max-width:960px) {
+    .story { grid-template-columns:1fr; gap:0; }
+    .story-stage { order:-1; top:68px; z-index:5; padding-bottom:8px; background:var(--bg); }
+    .stage-card canvas { height:230px; }
+    .st { min-height:58vh; }
+    .keys { grid-template-columns:1fr; }
+    .kbtn { display:none; }
+  }
+  /* Смена темы через View Transitions: круг от кнопки */
+  ::view-transition-old(root), ::view-transition-new(root) { animation:none; mix-blend-mode:normal; }
+</style>
+<script>
+  // Тема до первой отрисовки — без вспышки. Выбор хранится только в этом браузере.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("ke-theme"); } catch (e) {}
+    if (!t && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) t = "dark";
+    document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+    if (!(window.CSS && CSS.supports && CSS.supports("animation-timeline: view()")) && "IntersectionObserver" in window)
+      document.documentElement.classList.add("io");
+  })();
+</script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l2-5 2 9 2-7 2 6 2-3c2 0 3-4 5-4s3 4 5 4"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-6"/><path d="M3.3 18a10 10 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1.6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 15l2 2 4-4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+  <symbol id="i-hook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v9"/><path d="M12 11a4 4 0 1 1-4 4"/><path d="M8 2h8"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="18" rx="2"/><rect x="13" y="3" width="8" height="18" rx="2"/><path d="M6 8h2M16 8h2M6 12h2M15 12h4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2-1.4M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 11 5.1"/><circle cx="12" cy="20" r=".6"/></symbol>
+  <symbol id="i-win" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10 4.5v7H3zM11 4.3 21 3v8.5H11zM3 12.5h7v7L3 18.5zM11 12.5h10V21l-10-1.4z"/></symbol>
+  <symbol id="i-bill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="logo" viewBox="0 0 64 64">
+    <defs>
+      <linearGradient id="lg-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14284a"/><stop offset="1" stop-color="#0a1424"/></linearGradient>
+      <linearGradient id="lg-ln" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d8fae"/><stop offset=".5" stop-color="#3d8bfd"/><stop offset="1" stop-color="#f0b44c"/></linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="15" fill="url(#lg-bg)" stroke="rgba(255,255,255,.14)"/>
+    <path class="trace" pathLength="120" d="M10 42 L13 30 L16 47 L19 25 L22 44 L25 33 L28 38 C33 38 34 22 40 22 C46 22 47 40 54 40"
+          fill="none" stroke="url(#lg-ln)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="28" cy="38" r="3.4" fill="#f0b44c"/>
+  </symbol>
+</svg>
+
+<div class="progress" aria-hidden="true"></div>
+
+<header class="top" id="top">
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="КартЭдит — на главную"><svg><use href="#logo"/></svg><b>Карт<span>Эдит</span></b></a>
+    <nav class="links" aria-label="Разделы">
+      <a href="#features">Возможности</a>
+      <a href="#story">В работе</a>
+      <a href="#legal">Законность</a>
+      <a href="#who">Для кого</a>
+      <a href="#price">Цена</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <div class="nav-act">
+      <button class="icon-btn kbtn" id="palbtn" type="button" aria-label="Быстрый переход">Ctrl K</button>
+      <button class="icon-btn" id="theme" type="button" aria-label="Сменить тему"><svg><use href="#i-moon"/></svg></button>
+      <button class="icon-btn burger" type="button" popovertarget="menu" aria-label="Меню"><svg><use href="#i-menu"/></svg></button>
+      <a class="btn main sm" href="/demo">Демо онлайн</a>
+    </div>
+  </div>
+</header>
+<div id="menu" popover>
+  <a href="#features">Возможности</a>
+  <a href="#story">В работе</a>
+  <a href="#keys">Управление</a>
+  <a href="#legal">Законность</a>
+  <a href="#who">Для кого</a>
+  <a href="#price">Цена</a>
+  <a href="#faq">Вопросы</a>
+  <a href="/demo">Демо в браузере</a>
+</div>
+
+<main>
+<div class="hero">
+  <canvas id="ribbon" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="hero-in">
+      <div class="eyebrow"><i></i><span>Версия <span id="ver">1.0.5</span> · Windows 10+ · работает офлайн</span></div>
+      <h1><span class="w" style="--i:0">Чистые</span> <span class="w" style="--i:1">картограммы</span> <span class="grad"><span class="w" style="--i:2;--k:0">без</span> <span class="w" style="--i:3;--k:1">помех</span> <span class="w" style="--i:4;--k:2">и</span> <span class="w" style="--i:5;--k:3">ошибок</span> <span class="w" style="--i:6;--k:4">расшифровки</span></span></h1>
+      <p class="lead">Редактор картограмм <b>.asc3</b> для ГТИ и ремонта скважин.
+      Работает на вашем компьютере, файлы никуда не уходят.</p>
+      <div class="btns">
+        <a class="btn gold mag" href="/demo">Попробовать в браузере <svg><use href="#i-arrow"/></svg></a>
+        <a class="btn ghost mag" href="/download"><svg><use href="#i-down"/></svg> Скачать: 7 дней бесплатно</a>
+      </div>
+          </div>
+  </div>
+</div>
+
+<div class="wrap stage">
+  <div class="window">
+    <div class="bar"><i></i><i></i><i></i><span>КартЭдит — демо-картограмма: сутки ремонта, синтетические данные</span></div>
+    <img src="/assets/editor.webp" width="1600" height="955" alt="Окно КартЭдит: дерево суток слева, график каналов веса, давления и глубины, таблица значений внизу" fetchpriority="high">
+  </div>
+  <p class="caption">Окно программы на синтетических данных. То же самое — <a href="/demo">в браузере</a>.</p>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker">Возможности</div>
+      <h2>Что умеет</h2>
+    </div>
+    <div class="bento">
+      <div class="card wide rv"><div class="ic"><svg><use href="#i-wave"/></svg></div>
+        <h3>Стёрка и сглаживание</h3>
+        <p>Убирают выбросы и провалы датчиков. Правка точечная, в таблице видно каждое значение.</p></div>
+      <div class="card wide rv"><div class="ic"><svg><use href="#i-gauge"/></svg></div>
+        <h3>Калибровка по каналам</h3>
+        <p>Исправляет ошибки калибровки и расшифровки в одном канале, не трогая остальные.</p></div>
+      <div class="card wide rv"><div class="ic"><svg><use href="#i-file"/></svg></div>
+        <h3>Запись в .asc3</h3>
+        <p>Файл сохраняется в исходном формате: штатное ПО открывает его без конвертации.</p></div>
+      <div class="card wide rv"><div class="ic"><svg><use href="#i-cal"/></svg></div>
+        <h3>Многосуточные файлы</h3>
+        <p>Границы суток, быстрый переход к интервалу. График и таблица синхронны.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="story">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker">В работе</div>
+      <h2>От файла с помехами до проверенного результата</h2>
+      <p class="sub">Листайте: график справа показывает каждый шаг. Сигнал нарисован кодом страницы, это не файл заказчика.</p>
+    </div>
+    <div class="story">
+      <div class="story-steps">
+        <article class="st" data-step="0"><div class="num">ШАГ 1</div><h3>Открыли файл</h3>
+          <p>Все каналы на одном графике. Помехи видно сразу: выбросы, провал датчика, сдвиг калибровки.</p></article>
+        <article class="st" data-step="1"><div class="num">ШАГ 2</div><h3>Выделили участок</h3>
+          <p>Выделение мышью, масштаб под курсором.</p>
+          <div class="kc"><kbd>Shift</kbd><i>+</i><kbd>ЛКМ ↔</kbd> &nbsp; <kbd>Alt</kbd><i>+</i><kbd>колесо</kbd></div></article>
+        <article class="st" data-step="2"><div class="num">ШАГ 3</div><h3>Исправили</h3>
+          <p>Стёрка, сглаживание или правка в таблице. Любое действие отменяется.</p>
+          <div class="kc"><kbd>Ctrl</kbd><i>+</i><kbd>Z</kbd></div></article>
+        <article class="st" data-step="3"><div class="num">ШАГ 4</div><h3>Сравнили с исходником</h3>
+          <p>Кнопка «⇄» показывает, что изменилось, и возвращает любой участок. Исправленными остаются только места с дефектами, остальной сигнал не трогается.</p></article>
+      </div>
+      <div class="story-stage">
+        <div class="stage-card">
+          <div class="hd"><span id="stcap">шаг 1 из 4 · исходный сигнал</span><b>вес на крюке</b></div>
+          <canvas id="stcv" aria-hidden="true"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="keys">
+  <div class="wrap">
+    <div class="center rv">
+      <div class="kicker">Управление</div>
+      <h2>Работает с клавиатуры и мыши</h2>
+      <p class="sub">Нажмите клавиши: они подсветятся. В программе действуют те же сочетания.</p>
+    </div>
+    <div class="keys rv">
+      <div class="krow"><div class="kcaps"><kbd data-k="ctrl">Ctrl</kbd><i>+</i><kbd data-k="z">Z</kbd></div><span>Отменить действие</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="ctrl">Ctrl</kbd><i>+</i><kbd data-k="x">X</kbd></div><span>Вернуть отменённое (также Ctrl+Y)</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="ctrl">Ctrl</kbd><i>+</i><kbd data-k="a">A</kbd></div><span>Выделить всё</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="ctrl">Ctrl</kbd><i>+</i><kbd data-k="c">C</kbd><i>/</i><kbd data-k="v">V</kbd></div><span>Копировать и вставить участок</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="shift">Shift</kbd><i>+</i><kbd>ЛКМ ↔</kbd></div><span>Выделить участок на графике</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="alt">Alt</kbd><i>+</i><kbd>колесо</kbd></div><span>Масштаб под курсором</span></div>
+      <div class="krow"><div class="kcaps"><kbd data-k="ctrl">Ctrl</kbd><i>+</i><kbd>колесо</kbd></div><span>Прокрутка по горизонтали</span></div>
+      <div class="krow"><div class="kcaps"><kbd>ПКМ ↔</kbd></div><span>Панорама: двигать график</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="legal">
+  <div class="wrap">
+    <div class="legal rv">
+      <div class="kicker">Законность</div>
+      <h2>Коррекция, а не искажение</h2>
+      <p class="sub">Помеха датчика уже делает картограмму недостоверной. Каждая правка видна, условия применения закреплены в договоре.</p>
+      <div class="legal-grid two">
+        <div class="legal-item"><h3><svg><use href="#i-undo"/></svg>История изменений</h3>
+          <p>Действие отменяется <kbd>Ctrl</kbd>+<kbd>Z</kbd> и возвращается <kbd>Ctrl</kbd>+<kbd>X</kbd>. В файл пишется только по команде «Сохранить».</p></div>
+        <div class="legal-item"><h3><svg><use href="#i-doc"/></svg>Ограничение в договоре</h3>
+          <p>По <a href="/offer">оферте</a> (пп. 3.1–3.2) ПО служит для коррекции и анализа данных; умышленное искажение показателей запрещено.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="who">
+  <div class="wrap">
+    <div class="rv">
+      <div class="kicker">Для кого</div>
+      <h2>Что важно инженеру, СБ и бухгалтерии</h2>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Для кого">
+      <button role="tab" id="t1" aria-controls="p1" aria-selected="true">Инженеру</button>
+      <button role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">Службе безопасности</button>
+      <button role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">Бухгалтерии</button>
+    </div>
+    <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+      <div><h3>Минуты вместо часа ручной правки</h3>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span>Выделили участок, убрали выброс: таблица обновилась сразу.</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Калибровка правится в одном канале, соседние не меняются.</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Пробный период идёт на ваших файлах и вашем компьютере.</span></li>
+        </ul></div>
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 200"><rect x="10" y="20" width="280" height="160" rx="14" fill="var(--bg-2)" stroke="var(--card-line)"/><path d="M30 140 L45 90 L55 150 L65 70 L78 130 L90 110 C120 110 125 60 150 60 S190 120 220 120 S260 80 275 80" fill="none" stroke="var(--signal)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="88" y="40" width="190" height="120" rx="8" fill="rgba(240,180,76,.12)" stroke="var(--gold)" stroke-dasharray="6 5"/></svg></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+      <div><h3>Данные остаются внутри периметра</h3>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span>Интернет для работы не нужен: на изолированной машине программа открывает, правит и сохраняет файлы.</span></li>
+          <li><svg><use href="#i-check"/></svg><span>К серверу kartedit.ru она обращается только за статусом ключа (раз в сутки, передаётся отпечаток ключа) и номером версии (раз в трое суток).</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Перечень обращений в формуляре: пришлём до установки. Контрольная сумма установщика — на странице <a href="/checksum">проверки файла</a>.</span></li>
+        </ul></div>
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 200"><rect x="70" y="30" width="160" height="110" rx="12" fill="var(--bg-2)" stroke="var(--card-line)" stroke-width="2"/><rect x="120" y="140" width="60" height="14" fill="var(--card-line)"/><rect x="95" y="154" width="110" height="10" rx="5" fill="var(--card-line)"/><path d="M150 58 125 68v18c0 18 12 28 25 32 13-4 25-14 25-32V68z" fill="rgba(47,194,155,.15)" stroke="var(--mint)" stroke-width="3" stroke-linejoin="round"/><path d="m139 87 8 8 15-15" fill="none" stroke="var(--mint)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+      <div><h3>Документы для бухгалтерии</h3>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span>Договор-оферта, счёт и акт; чек с ИНН организации для учёта расходов.</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Лицензия на одно рабочее место; в счёт включается нужное число.</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Продавец — самозанятый (НПД), без НДС. Реквизиты — на странице <a href="/requisites">реквизитов</a>.</span></li>
+        </ul></div>
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 200"><path d="M95 25h110v150l-18-12-18 12-18-12-18 12-18-12-20 12z" fill="var(--bg-2)" stroke="var(--card-line)" stroke-width="2" stroke-linejoin="round"/><path d="M115 60h70M115 82h70M115 104h46" stroke="var(--signal)" stroke-width="6" stroke-linecap="round"/><circle cx="190" cy="132" r="22" fill="rgba(240,180,76,.18)" stroke="var(--gold)" stroke-width="3"/><path d="m180 132 7 7 13-13" fill="none" stroke="var(--gold)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<section id="price">
+  <div class="wrap">
+    <div class="center rv">
+      <div class="kicker">Цена</div>
+      <h2>Срочная лицензия</h2>
+      <p class="sub">Условия — в <a href="/offer">публичной оферте</a>.</p>
+    </div>
+    <div class="price-wrap">
+      <div class="price hi rv"><span class="tag">Организациям</span>
+        <h3>По счёту</h3>
+        <div class="amt"><span class="rub">30 000</span> ₽ <small>/ 30 дней · 1 компьютер</small></div>
+        <p class="muted">Без НДС.</p>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span>От 1 до <span class="maxm">12</span> периодов на нужное число мест</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Ключ письмом не позднее одного рабочего дня после поступления средств (п. 5.2 оферты)</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Перенос на другой компьютер в оплаченный срок бесплатно (п. 4.4)</span></li>
+        </ul>
+        <a class="btn main" href="mailto:support@kartedit.ru?subject=КартЭдит%20—%20счёт%20для%20организации&body=Здравствуйте!%20Прошу%20выставить%20счёт.%0A%0AНаименование%20организации:%0AИНН:%0AКоличество%20рабочих%20мест:%0AСрок%20лицензии:%0AКонтактное%20лицо%20и%20телефон:">Запросить счёт <svg><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="price rv">
+        <h3>Частному лицу</h3>
+        <div class="amt"><span class="rub">30 000</span> ₽ <small>/ 30 дней · 1 компьютер</small></div>
+        <p class="muted">Оплата банковской картой.</p>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span>Срок считается с даты выдачи ключа (п. 2.3)</span></li>
+          <li><svg><use href="#i-check"/></svg><span>Перед покупкой — пробный период 7 дней</span></li>
+        </ul>
+        <a class="btn line" href="/pay">Оплатить картой <svg><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="center rv">
+      <div class="kicker">Вопросы</div>
+      <h2>Частые вопросы</h2>
+    </div>
+    <div class="faq rv">
+      <details name="faq" open><summary>Данные скважины куда-то уходят?</summary>
+        <p>Нет, всё остаётся на вашем компьютере. Что программа спрашивает у сервера, описано в разделе «Для кого», вкладка «Службе безопасности».</p></details>
+      <details name="faq"><summary>Это законно — редактировать картограмму?</summary>
+        <p>Да, если это коррекция: убрать помеху, исправить ошибку калибровки или расшифровки. Умышленное искажение показателей запрещено лицензией.</p></details>
+      <details name="faq"><summary>Это программа от производителя регистратора?</summary>
+        <p>Нет. КартЭдит — самостоятельная программа, разработана независимо и не связана с производителем регистратора и его программным обеспечением.</p></details>
+      <details name="faq"><summary>Подписка или покупка навсегда?</summary>
+        <p>Срочная лицензия: 30 дней на один компьютер, сразу можно оплатить от 1 до 12 периодов. Автопродления и бессрочных лицензий нет.</p></details>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="cta rv">
+    <div>
+      <h2>Нужен счёт для организации?</h2>
+      <p>Пришлите наименование, ИНН и число рабочих мест: вышлем счёт и пробную версию.</p>
+    </div>
+    <a class="btn gold" href="mailto:support@kartedit.ru?subject=КартЭдит%20—%20счёт%20для%20организации&body=Здравствуйте!%20Прошу%20выставить%20счёт.%0A%0AНаименование%20организации:%0AИНН:%0AКоличество%20рабочих%20мест:%0AСрок%20лицензии:%0AКонтактное%20лицо%20и%20телефон:">Запросить счёт <svg><use href="#i-arrow"/></svg></a>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <div>
+        <a class="brand" href="#"><svg><use href="#logo"/></svg><b>Карт<span>Эдит</span></b></a>
+        <div>Киселев С.С., самозанятый (НПД), ИНН <span id="inn">637205381490</span><br>
+        <a href="mailto:support@kartedit.ru">support@kartedit.ru</a></div>
+      </div>
+      <nav aria-label="Документы">
+        <a href="/offer">Публичная оферта</a>
+        <a href="/privacy">Политика обработки ПДн</a>
+        <a href="/requisites">Реквизиты и оплата</a>
+        <a href="/checksum">Проверка установщика</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<dialog id="pal" aria-label="Быстрый переход">
+  <input id="palq" type="text" placeholder="Куда перейти?  Например: цена, демо, оферта" autocomplete="off">
+  <ul id="pall">
+    <li><a href="#features">Возможности <small>раздел</small></a></li>
+    <li><a href="#story">В работе <small>раздел</small></a></li>
+    <li><a href="#keys">Управление <small>раздел</small></a></li>
+    <li><a href="#legal">Законность <small>раздел</small></a></li>
+    <li><a href="#who">Для кого <small>раздел</small></a></li>
+    <li><a href="#price">Цена <small>раздел</small></a></li>
+    <li><a href="#faq">Вопросы <small>раздел</small></a></li>
+    <li><a href="/demo">Демо в браузере <small>страница</small></a></li>
+    <li><a href="/download">Скачать пробную версию <small>файл</small></a></li>
+    <li><a href="/offer">Публичная оферта <small>документ</small></a></li>
+    <li><a href="/requisites">Реквизиты и оплата <small>документ</small></a></li>
+  </ul>
+</dialog>
+
+<script>
+/* Лента данных: слева шум датчиков, справа — тот же сигнал после коррекции.
+   Своя перспективная проекция на canvas 2D; ни одной внешней библиотеки. */
+(function () {
+  var cv = document.getElementById("ribbon");
+  if (!cv || !cv.getContext) return;
+  var g = cv.getContext("2d");
+  if (!g) return;
+
+  var still = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // Псевдослучайная таблица + сглаженная интерполяция = воспроизводимый шум.
+  var N = 512, T = new Float32Array(N), seed = 20260901 >>> 0;
+  for (var i = 0; i < N; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    T[i] = seed / 4294967296 - 0.5;
+  }
+  function noise(x) {
+    var i0 = Math.floor(x), f = x - i0;
+    var a = T[((i0 % N) + N) % N], b = T[(((i0 + 1) % N) + N) % N];
+    f = f * f * (3 - 2 * f);
+    return a + (b - a) * f;
+  }
+
+  var W = 0, H = 0, dpr = 1;
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.max(1, Math.round(W * dpr));
+    cv.height = Math.max(1, Math.round(H * dpr));
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  var K = 16, M = 108, T_CLEAN = 0.60;  // граница, после которой шума нет
+
+  function value(t, u, ph) {
+    var v = Math.sin((t * 3.1 + u * 0.55 + ph) * 6.2832) * 0.52
+          + Math.sin((t * 7.3 - ph * 0.7) * 6.2832) * 0.15;
+    var k = (T_CLEAN - t) / 0.48;            // 1 слева, 0 правее границы
+    if (k > 1) k = 1; else if (k < 0) k = 0;
+    if (k > 0) {
+      v += noise(t * 26 + u * 37 + ph * 3.0) * 1.15 * k
+         + noise(t * 74 + u * 61 - ph * 1.7) * 0.55 * k;
+    }
+    return v;
+  }
+
+  function draw(ph) {
+    g.clearRect(0, 0, W, H);
+    if (W < 2 || H < 2) return;
+    var f = H * 1.30, cx = W * 0.68, cy = H * 0.50, SPAN = 4.2;
+
+    var grad = g.createLinearGradient(W * 0.12, 0, W * 0.98, 0);
+    grad.addColorStop(0.00, "rgba(128,146,172,0.42)");
+    grad.addColorStop(0.45, "rgba(96,140,205,0.62)");
+    grad.addColorStop(0.72, "rgba(61,139,253,0.92)");
+    grad.addColorStop(1.00, "rgba(120,190,255,0.95)");
+    g.strokeStyle = grad;
+    g.lineJoin = "round"; g.lineCap = "round";
+
+    for (var k = 0; k < K; k++) {
+      var u = k / (K - 1) - 0.5;
+      var Z = 3.15 + u * 2.55;
+      g.globalAlpha = 0.95 - Math.abs(u) * 0.45;
+      g.lineWidth = Math.max(0.7, 1.9 * (3.15 / Z));
+      g.beginPath();
+      for (var j = 0; j < M; j++) {
+        var t = j / (M - 1);
+        var X = (t - 0.5) * SPAN;
+        var Y = u * 0.92 + value(t, u, ph) * 0.30;
+        var sx = cx + f * X / Z, sy = cy - f * Y / Z;
+        if (j === 0) g.moveTo(sx, sy); else g.lineTo(sx, sy);
+      }
+      g.stroke();
+    }
+
+    // Линия перехода «шум кончился» — поперёк ленты, тем же способом.
+    g.globalAlpha = 0.8; g.lineWidth = 1.6;
+    g.strokeStyle = "rgba(240,180,76,0.9)";
+    g.beginPath();
+    for (var m = 0; m < K; m++) {
+      var uu = m / (K - 1) - 0.5, Zz = 3.15 + uu * 2.55;
+      var Xx = (T_CLEAN - 0.5) * SPAN;
+      var Yy = uu * 0.92 + value(T_CLEAN, uu, ph) * 0.30;
+      var px = cx + f * Xx / Zz, py = cy - f * Yy / Zz;
+      if (m === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  var raf = 0, t0 = 0;
+  function loop(ts) {
+    raf = 0;
+    if (!t0) t0 = ts;
+    draw((ts - t0) / 9000);
+    if (!document.hidden) raf = requestAnimationFrame(loop);
+  }
+  function start() {
+    if (still) { draw(0.18); return; }
+    if (!raf && !document.hidden) raf = requestAnimationFrame(loop);
+  }
+
+  size(); start();
+  var rt = 0;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () { size(); if (still) draw(0.18); }, 120);
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    else if (!still) { t0 = 0; start(); }
+  });
+})();
+
+/* Искусственный сигнал для сценария: условный вес на крюке за цикл СПО.
+   base — «как было на самом деле» с естественным шумом датчика; raw — то, что
+   записал регистратор (выбросы, провал в ноль, сбитая калибровка); clean — после
+   коррекции: выбросы заменены средним соседей, провал закрыт прямой между краями,
+   калибровка возвращена. Рисуется кодом страницы, настоящих данных здесь нет. */
+window.KE = { signal: function () {
+  var n = 900, base = new Float32Array(n), clean = new Float32Array(n), raw = new Float32Array(n), s = 7, out = [];
+  function rnd() { s = (Math.imul(s, 1103515245) + 12345) >>> 0; return s / 4294967296; }
+  for (var i = 0; i < n; i++) {
+    var t = i / n * 6, ph = t - Math.floor(t);
+    var v = ph < 0.08 ? 0.12 + ph / 0.08 * 0.66
+          : ph < 0.70 ? 0.78 - (ph - 0.08) * 0.10
+          : ph < 0.76 ? 0.72 - (ph - 0.70) / 0.06 * 0.6
+          : 0.12;
+    base[i] = v + Math.sin(i * 0.21) * 0.01 + (rnd() - 0.5) * 0.03;
+  }
+  for (i = 0; i < n; i++) {
+    var r = base[i];
+    if (rnd() < 0.025 && (i < 300 || i > 330) && (i < 560 || i > 700)) { r += (rnd() - 0.3) * 0.7; out[i] = 1; }
+    if (i > 300 && i < 330) r = 0.0;
+    if (i > 560 && i < 700) r = r * 1.22 + 0.06;
+    raw[i] = r;
+  }
+  for (i = 0; i < n; i++) {
+    if (out[i] && i > 0 && i < n - 1) clean[i] = (base[i - 1] + base[i + 1]) / 2;
+    else if (i > 300 && i < 330) clean[i] = base[300] + (base[330] - base[300]) * (i - 300) / 30;
+    else clean[i] = base[i];
+  }
+  return { n: n, clean: clean, raw: raw };
+} };
+
+/* Сценарий «как это выглядит»: холст приклеен, подсвеченный шаг задаёт цель,
+   а значения плавно «подтягиваются» к ней — скорость прокрутки не важна. */
+(function () {
+  var cv = document.getElementById("stcv"), cap = document.getElementById("stcap");
+  if (!cv || !cv.getContext) return;
+  var g = cv.getContext("2d"), W = 0, H = 0, dpr = 1, sig = KE.signal(), n = sig.n, raw = sig.raw, clean = sig.clean;
+  var still = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var STEPS = [{ c: 0, s: 0, d: 0 }, { c: 0, s: 1, d: 0 }, { c: 1, s: 0.25, d: 0 }, { c: 1, s: 0, d: 1 }];
+  var NAMES = ["исходный сигнал", "выделен участок", "после коррекции", "сравнение с исходником"];
+  var cur = { c: 0, s: 0, d: 0 }, tgt = STEPS[0], raf = 0;
+  var ZONES = [[286, 346, "провал датчика"], [548, 712, "сбитая калибровка"]];
+  var segs = [], k0 = -1;
+  for (var i = 0; i < n; i++) {
+    var ch = Math.abs(raw[i] - clean[i]) > 0.05;
+    if (ch && k0 < 0) k0 = i;
+    if ((!ch || i === n - 1) && k0 >= 0) { if (i - k0 > 0) segs.push([k0, i]); k0 = -1; }
+  }
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+  function X(i) { return i / (n - 1) * W; }
+  function Y(v) { var pad = 34, h = H - pad * 2; return pad + h - Math.max(-0.05, Math.min(1.1, v)) * h; }
+  function line(fn) { g.beginPath(); for (var i = 0; i < n; i++) { var x = X(i), y = Y(fn(i)); if (i) g.lineTo(x, y); else g.moveTo(x, y); } }
+  function draw() {
+    if (!W) return;
+    g.clearRect(0, 0, W, H);
+    g.strokeStyle = "rgba(255,255,255,.06)"; g.lineWidth = 1;
+    for (var k = 1; k < 8; k++) { var yy = H * k / 8; g.beginPath(); g.moveTo(0, yy); g.lineTo(W, yy); g.stroke(); }
+    g.lineJoin = "round"; g.lineCap = "round";
+    if (cur.d > 0.02) {                                   // исходник пунктиром
+      g.setLineDash([5, 5]); g.strokeStyle = "rgba(138,155,184," + (0.75 * cur.d) + ")"; g.lineWidth = 1.3;
+      line(function (i) { return raw[i]; }); g.stroke(); g.setLineDash([]);
+    }
+    g.lineWidth = 1.8;                                     // линия: серая -> золотая
+    g.strokeStyle = "rgba(138,155,184," + (1 - cur.c) + ")"; line(function (i) { return raw[i]; }); g.stroke();
+    if (cur.c > 0.01) {
+      g.strokeStyle = "rgba(240,180,76," + cur.c + ")"; g.lineWidth = 2.2;
+      line(function (i) { return raw[i] + (clean[i] - raw[i]) * cur.c; }); g.stroke();
+    }
+    if (cur.s > 0.02) {                                    // рамки выделения
+      g.font = "600 12px system-ui,sans-serif";
+      for (var z = 0; z < ZONES.length; z++) {
+        var x1 = X(ZONES[z][0]), x2 = X(ZONES[z][1]);
+        g.fillStyle = "rgba(61,139,253," + (0.14 * cur.s) + ")"; g.fillRect(x1, 14, x2 - x1, H - 28);
+        g.setLineDash([6, 4]); g.strokeStyle = "rgba(121,184,255," + cur.s + ")"; g.lineWidth = 1.4;
+        g.strokeRect(x1, 14, x2 - x1, H - 28); g.setLineDash([]);
+        g.fillStyle = "rgba(121,184,255," + cur.s + ")"; g.fillText(ZONES[z][2], x1 + 6, 30);
+      }
+    }
+    if (cur.d > 0.02) {                                    // что изменилось
+      g.fillStyle = "rgba(240,180,76," + cur.d + ")";
+      for (var q = 0; q < segs.length; q++) { var a = X(segs[q][0]), b = X(segs[q][1]); g.fillRect(a, H - 20, Math.max(3, b - a), 5); }
+      g.font = "600 12px system-ui,sans-serif"; g.fillText("изменено: " + segs.length + " уч.", 12, H - 28);
+    }
+  }
+  function tick() {
+    raf = 0; var moving = false;
+    ["c", "s", "d"].forEach(function (p) {
+      var dlt = tgt[p] - cur[p];
+      if (Math.abs(dlt) > 0.002) { cur[p] += dlt * 0.085; moving = true; } else cur[p] = tgt[p];
+    });
+    draw(); if (moving) raf = requestAnimationFrame(tick);
+  }
+  function go(i) {
+    tgt = STEPS[i]; cap.textContent = "шаг " + (i + 1) + " из 4 · " + NAMES[i];
+    if (still) { cur = { c: tgt.c, s: tgt.s, d: tgt.d }; draw(); } else if (!raf) raf = requestAnimationFrame(tick);
+  }
+  window.addEventListener("resize", size); size();
+  var steps = [].slice.call(document.querySelectorAll(".st"));
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        steps.forEach(function (x) { x.classList.toggle("on", x === e.target); });
+        go(+e.target.getAttribute("data-step"));
+      });
+    }, { rootMargin: "-42% 0px -42% 0px" });
+    steps.forEach(function (x) { io.observe(x); });
+  } else { steps.forEach(function (x) { x.classList.add("on"); }); go(3); }
+})();
+
+/* Клавиши: нажатые на странице подсвечиваются в списке «Управление». */
+(function () {
+  var map = { ControlLeft: "ctrl", ControlRight: "ctrl", ShiftLeft: "shift", ShiftRight: "shift", AltLeft: "alt", AltRight: "alt",
+              KeyZ: "z", KeyX: "x", KeyY: "y", KeyA: "a", KeyC: "c", KeyV: "v" };
+  function mark(code, on) {
+    var k = map[code]; if (!k) return;
+    [].forEach.call(document.querySelectorAll('kbd[data-k="' + k + '"]'), function (el) { el.classList.toggle("on", on); });
+  }
+  window.addEventListener("keydown", function (e) { mark(e.code, true); });
+  window.addEventListener("keyup", function (e) { mark(e.code, false); });
+  window.addEventListener("blur", function () { [].forEach.call(document.querySelectorAll("kbd.on"), function (el) { el.classList.remove("on"); }); });
+})();
+
+/* Быстрый переход (Ctrl+K или «/»): нативный <dialog>, без библиотек. */
+(function () {
+  var d = document.getElementById("pal"), q = document.getElementById("palq"), list = document.getElementById("pall"),
+      btn = document.getElementById("palbtn");
+  if (!d || !d.showModal) { if (btn) btn.style.display = "none"; return; }
+  var items = [].slice.call(list.querySelectorAll("li")), sel = 0;
+  function vis() { return items.filter(function (li) { return !li.hidden; }); }
+  function mark() { var v = vis(); items.forEach(function (li) { li.firstElementChild.classList.remove("sel"); }); if (v[sel]) v[sel].firstElementChild.classList.add("sel"); }
+  function filt() {
+    var t = q.value.trim().toLowerCase();
+    items.forEach(function (li) { li.hidden = t && li.textContent.toLowerCase().indexOf(t) < 0; });
+    sel = 0; mark();
+  }
+  function open() { q.value = ""; filt(); d.showModal(); q.focus(); }
+  q.addEventListener("input", filt);
+  q.addEventListener("keydown", function (e) {
+    var v = vis();
+    if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(sel + 1, v.length - 1); mark(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(sel - 1, 0); mark(); }
+    else if (e.key === "Enter" && v[sel]) { e.preventDefault(); v[sel].firstElementChild.click(); }
+  });
+  list.addEventListener("click", function (e) { if (e.target.closest("a")) d.close(); });
+  d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+  if (btn) btn.addEventListener("click", open);
+  window.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && e.code === "KeyK") { e.preventDefault(); open(); }
+    else if (e.key === "/" && tag !== "input" && tag !== "textarea") { e.preventDefault(); open(); }
+  });
+})();
+
+/* Подсветка за курсором на первом экране и «магнитные» кнопки (только мышь). */
+(function () {
+  if (!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches)) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var hero = document.querySelector(".hero");
+  if (hero) hero.addEventListener("pointermove", function (e) {
+    var r = hero.getBoundingClientRect();
+    hero.style.setProperty("--px", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+    hero.style.setProperty("--py", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+  });
+  [].forEach.call(document.querySelectorAll(".btn.mag"), function (b) {
+    b.addEventListener("pointermove", function (e) {
+      var r = b.getBoundingClientRect();
+      b.style.transform = "translate(" + ((e.clientX - r.left - r.width / 2) * 0.12).toFixed(1) + "px," + ((e.clientY - r.top - r.height / 2) * 0.2).toFixed(1) + "px)";
+    });
+    b.addEventListener("pointerleave", function () { b.style.transform = ""; });
+  });
+})();
+
+/* Мелкие современные приёмы: стеклянная шапка, появление при прокрутке (если нет
+   CSS view-timeline), 3D-наклон карточек, счётчики, вкладки, тема с View Transitions,
+   цена и версия — с того же сервера, что и оферта. */
+(function () {
+  var root = document.documentElement;
+  var still = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  var top = document.getElementById("top");
+  function onScroll() { top.classList.toggle("solid", window.scrollY > 24); }
+  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+
+  // Полоса прогресса там, где нет scroll-timeline.
+  var bar = document.querySelector(".progress");
+  if (!(window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()"))) {
+    window.addEventListener("scroll", function () {
+      var h = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = "scaleX(" + (h > 0 ? scrollY / h : 0) + ")";
+    }, { passive: true });
+  }
+
+  if (root.classList.contains("io")) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+  }
+
+  // 3D-наклон и «прожектор» за курсором — только для мыши.
+  if (!still && window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    document.querySelectorAll(".card").forEach(function (c) {
+      c.addEventListener("pointermove", function (e) {
+        var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        c.style.setProperty("--ry", ((x - 0.5) * 7).toFixed(2) + "deg");
+        c.style.setProperty("--rx", ((0.5 - y) * 7).toFixed(2) + "deg");
+        c.style.setProperty("--mx", (x * 100).toFixed(1) + "%");
+        c.style.setProperty("--my", (y * 100).toFixed(1) + "%");
+      });
+      c.addEventListener("pointerleave", function () { c.style.setProperty("--rx", "0deg"); c.style.setProperty("--ry", "0deg"); });
+    });
+  }
+
+  // Счётчики.
+  if (!still && "IntersectionObserver" in window) {
+    var co = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        co.unobserve(e.target);
+        var el = e.target, end = +el.getAttribute("data-count"), t0 = 0;
+        if (!end) return;
+        (function step(ts) {
+          if (!t0) t0 = ts;
+          var k = Math.min(1, (ts - t0) / 1100); k = 1 - Math.pow(1 - k, 3);
+          el.textContent = Math.round(end * k);
+          if (k < 1) requestAnimationFrame(step);
+        })(performance.now());
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll("[data-count]").forEach(function (el) { co.observe(el); });
+  }
+
+  // Вкладки (ARIA tabs, стрелки на клавиатуре).
+  var tabs = [].slice.call(document.querySelectorAll('[role="tab"]'));
+  function sel(t) {
+    tabs.forEach(function (x) {
+      var on = x === t;
+      x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+      document.getElementById(x.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () {
+      if (document.startViewTransition && !still) document.startViewTransition(function () { sel(t); }); else sel(t);
+    });
+    t.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (d) { var nx = tabs[(i + d + tabs.length) % tabs.length]; nx.focus(); sel(nx); }
+    });
+  });
+
+  // Тема: круговое раскрытие от кнопки через View Transitions API.
+  var tb = document.getElementById("theme");
+  function icon() { tb.firstElementChild.firstElementChild.setAttribute("href", root.getAttribute("data-theme") === "dark" ? "#i-sun" : "#i-moon"); }
+  icon();
+  tb.addEventListener("click", function (e) {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    function apply() { root.setAttribute("data-theme", next); icon(); try { localStorage.setItem("ke-theme", next); } catch (x) {} }
+    if (!document.startViewTransition || still) return apply();
+    var x = e.clientX || innerWidth - 40, y = e.clientY || 34,
+        r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    document.startViewTransition(apply).ready.then(function () {
+      root.animate({ clipPath: ["circle(0 at " + x + "px " + y + "px)", "circle(" + r + "px at " + x + "px " + y + "px)"] },
+                   { duration: 600, easing: "cubic-bezier(.2,.7,.2,1)", pseudoElement: "::view-transition-new(root)" });
+    });
+  });
+
+  // Закрыть мобильное меню после перехода по разделу.
+  var menu = document.getElementById("menu");
+  if (menu && menu.hidePopover) menu.addEventListener("click", function (e) { if (e.target.tagName === "A") menu.hidePopover(); });
+
+  // Цена и версия — из тех же источников, что и страница оплаты и /download.
+  if (window.fetch) {
+    fetch("/api/pricing").then(function (r) { return r.ok ? r.json() : null; }).then(function (p) {
+      if (!p || !p.renewal_month_rub) return;
+      var s = String(p.renewal_month_rub).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      document.querySelectorAll(".rub").forEach(function (el) { el.textContent = s; });
+      if (p.max_months) document.querySelectorAll(".maxm").forEach(function (el) { el.textContent = p.max_months; });
+    }).catch(function () {});
+    fetch("/api/version").then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      if (v && v.version) document.getElementById("ver").textContent = v.version;
+    }).catch(function () {});
+  }
+})();
+</script>
+
+</body>
+</html>
