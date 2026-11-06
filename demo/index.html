@@ -36,7 +36,26 @@
     (function () {
       var orig = window.fetch.bind(window);
       window.fetch = function (url, opts) {
-        if (typeof url === "string" && url.indexOf("/api/") === 0) url = "/demo" + url;
+        if (typeof url === "string") {
+          if (url.indexOf("/api/telemetry") !== -1 || url.indexOf("/demo/api/telemetry") !== -1) {
+            return orig("/demo/telemetry.json", opts);
+          }
+          if (url.indexOf("/api/health") !== -1 || url.indexOf("/demo/api/health") !== -1) {
+            return Promise.resolve(new Response(JSON.stringify({status: "ok", static_autover: 1}), {status: 200, headers: {"Content-Type": "application/json"}}));
+          }
+          if (url.indexOf("/api/license/status") !== -1 || url.indexOf("/demo/api/license/status") !== -1) {
+            return Promise.resolve(new Response(JSON.stringify({state: "demo", reason: "Демо-версия в браузере"}), {status: 200, headers: {"Content-Type": "application/json"}}));
+          }
+          if (url.indexOf("/api/save_allowed") !== -1 || url.indexOf("/demo/api/save_allowed") !== -1) {
+            return Promise.resolve(new Response(JSON.stringify({ok: false, license_state: "demo", error: "Недоступно в демо-версии"}), {status: 200, headers: {"Content-Type": "application/json"}}));
+          }
+          if (url.indexOf("/api/update_check") !== -1 || url.indexOf("/demo/api/update_check") !== -1) {
+            return Promise.resolve(new Response(JSON.stringify({update: false}), {status: 200, headers: {"Content-Type": "application/json"}}));
+          }
+          if (url.indexOf("/api/") === 0 || url.indexOf("/demo/api/") === 0) {
+            return Promise.resolve(new Response(JSON.stringify({ok: true}), {status: 200, headers: {"Content-Type": "application/json"}}));
+          }
+        }
         return orig(url, opts);
       };
     })();
