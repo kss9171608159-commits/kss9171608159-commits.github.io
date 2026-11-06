@@ -342,6 +342,161 @@
   }
   /* Смена темы через View Transitions: круг от кнопки */
   ::view-transition-old(root), ::view-transition-new(root) { animation:none; mix-blend-mode:normal; }
+
+  /* ---------- Дизайнерский промо-баннер (Акция: 1 месяц бесплатно) ---------- */
+  .promo-banner {
+    margin: 32px 0 0;
+    background: linear-gradient(135deg, rgba(20, 38, 66, 0.9) 0%, rgba(11, 22, 38, 0.96) 100%);
+    border: 1px solid rgba(240, 180, 76, 0.45);
+    border-radius: var(--r-md);
+    padding: 24px 28px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35), 0 0 24px rgba(240, 180, 76, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(14px);
+  }
+  .promo-banner::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(240, 180, 76, 0.22) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .promo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(240, 180, 76, 0.14);
+    border: 1px solid rgba(240, 180, 76, 0.35);
+    color: var(--gold);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .promo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 10px var(--gold);
+    animation: promoPulse 2s infinite ease-in-out;
+  }
+  @keyframes promoPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.8); }
+  }
+  .promo-h {
+    font-size: 1.38rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .promo-desc {
+    color: #a4b6cf;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin: 0 0 18px;
+  }
+  .promo-desc b {
+    color: #ffffff;
+  }
+  .promo-desc a {
+    color: var(--gold);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .promo-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .p-step {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .p-step:hover {
+    border-color: rgba(240, 180, 76, 0.3);
+    transform: translateY(-2px);
+  }
+  .p-num {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--signal) 0%, #2060cc 100%);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(61, 139, 253, 0.4);
+  }
+  .p-txt {
+    font-size: 0.88rem;
+    color: #d1dcf0;
+    line-height: 1.38;
+  }
+  .p-txt b {
+    color: #ffffff;
+  }
+  .promo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+  .promo-btn-main {
+    background: linear-gradient(135deg, #f0b44c 0%, #df9f30 100%);
+    color: #070f1c !important;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 14px rgba(240, 180, 76, 0.3);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .promo-btn-main:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(240, 180, 76, 0.45);
+  }
+  .promo-btn-sec {
+    color: #79b8ff !important;
+    text-decoration: none;
+    font-size: 0.93rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .promo-btn-sec:hover {
+    text-decoration: underline;
+  }
+  @media (max-width: 768px) {
+    .promo-banner { padding: 18px 20px; }
+    .promo-steps { grid-template-columns: 1fr; gap: 8px; }
+  }
+
 </style>
 <script>
   // Тема до первой отрисовки — без вспышки. Выбор хранится только в этом браузере.
@@ -432,6 +587,45 @@
         <a class="btn gold mag" href="/demo">Попробовать в браузере <svg><use href="#i-arrow"/></svg></a>
         <a class="btn ghost mag" href="/download"><svg><use href="#i-down"/></svg> Скачать: 7 дней бесплатно</a>
       </div>
+
+      <!-- ========== ДИЗАЙНЕРСКИЙ БАННЕР АКЦИИ: 1 МЕСЯЦ БЕСПЛАТНО ========== -->
+      <div class="promo-banner" id="promo-trial">
+        <div class="promo-tag">
+          <span class="promo-dot"></span>
+          <span>Специальное предложение · Расширенный тест-драйв</span>
+        </div>
+        <h2 class="promo-h">1 месяц полного доступа в подарок</h2>
+        <p class="promo-desc">
+          Оцените все возможности КартЭдит в реальной работе без ограничений. 
+          После установки отправьте свой «Код компьютера» на 
+          <a href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%D0%B0%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D1%80%D0%B0%D1%81%D1%88%D0%B8%D1%80%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">support@kartedit.ru</a>
+          — мы активируем полнофункциональную версию на <b>30 дней бесплатно</b>.
+        </p>
+        <div class="promo-steps">
+          <div class="p-step">
+            <span class="p-num">1</span>
+            <span class="p-txt"><b>Установите</b> программу на свой компьютер</span>
+          </div>
+          <div class="p-step">
+            <span class="p-num">2</span>
+            <span class="p-txt"><b>Скопируйте</b> код ПК в окне активации</span>
+          </div>
+          <div class="p-step">
+            <span class="p-num">3</span>
+            <span class="p-txt"><b>Отправьте</b> нам на почту и получите ключ на 30 дней</span>
+          </div>
+        </div>
+        <div class="promo-actions">
+          <a class="promo-btn-main" href="/download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Скачать КартЭдит
+          </a>
+          <a class="promo-btn-sec" href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%D0%B0%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D1%80%D0%B0%D1%81%D1%88%D0%B8%D1%80%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">
+            ✉ Отправить код на support@kartedit.ru &rarr;
+          </a>
+        </div>
+      </div>
+
           </div>
   </div>
 </div>
