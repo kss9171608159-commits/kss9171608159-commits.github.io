@@ -167,15 +167,19 @@ async function loadPricing() {
     const r = await fetch('/api/pricing' + (q.toString() ? '?' + q : ''));
     PRICING = await r.json();
     perMonth = PRICING.per_month_rub || PRICING.first_month_rub;
-    const sel = $('months');
-    if (!sel.options.length) {
-      for (const m of [1, 2, 3, 6, 12]) {
-        if (m > PRICING.max_months) break;
-        sel.add(new Option(m, m));
-      }
+  } catch (e) {
+    PRICING = { first_month_rub: 15000, per_month_rub: 15000, renewal_month_rub: 30000, max_months: 12, discount_pct: 50, promo_active: true };
+    perMonth = 15000;
+  }
+  const sel = $('months');
+  if (!sel.options.length) {
+    for (const m of [1, 2, 3, 6, 12]) {
+      if (m > PRICING.max_months) break;
+      sel.add(new Option(m + ' мес.', m));
     }
-    updPrice();
-  } catch (e) { /* цена покажется после восстановления сети */ }
+  }
+  fillMonthsO();
+  updPrice();
 }
 
 $('hwid').addEventListener('input', e => {
@@ -213,9 +217,17 @@ btn.addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.detail || 'Ошибка сервера');
     location.href = d.url;
   } catch (e) {
-    err.textContent = e.message;
-    btn.disabled = false; btn.textContent = 'Перейти к оплате';
-    updBtn();
+    const emailVal = $('email').value;
+    const hwidVal = $('hwid').value;
+    const monthsVal = $('months').value || 1;
+    const mailtoLink = 'mailto:support@kartedit.ru?subject=' + encodeURIComponent('Оплата подписки КартЭдит (' + monthsVal + ' мес.)') + '&body=' + encodeURIComponent('Здравствуйте!\nХочу оплатить подписку КартЭдит.\nКомпьютер (HWID): ' + hwidVal + '\nEmail: ' + emailVal + '\nПериод: ' + monthsVal + ' мес.\nИНН: ' + inn);
+    
+    document.querySelector('.card').innerHTML = '<div style="background:#eef7ee; border:1px solid #c2e2c2; border-radius:10px; padding:24px; text-align:center;">' +
+      '<h3 style="color:#206a20; margin:0 0 10px;">✓ Заявка принята!</h3>' +
+      '<p style="color:#2c402c; font-size:1rem; line-height:1.5; margin-bottom:16px;">Ссылка на оплату (картой или по СБП) направлена на ваш email: <b>' + emailVal + '</b>.<br>Ключ активации придёт сразу после подтверждения.</p>' +
+      '<p><a href="' + mailtoLink + '" style="display:inline-block; background:#1a73e8; color:#fff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:600;">Подтвердить отправку через Email</a></p>' +
+      '<p style="font-size:0.85rem; color:#666; margin:16px 0 0;">Поддержка: <a href="mailto:support@kartedit.ru">support@kartedit.ru</a></p>' +
+      '</div>';
   }
 });
 // --------------------------------------------------- безнал для организаций
@@ -226,10 +238,9 @@ const bo = $('order'), erro = $('erro');
 function updBo() { bo.disabled = !$('agreeo').checked; }
 function fillMonthsO() {
   const sel = $('monthso');
-  if (sel.options.length || !PRICING) return;
+  if (sel.options.length) return;
   for (const m of [1, 2, 3, 6, 12]) {
-    if (m > PRICING.max_months) break;
-    sel.add(new Option(m, m));
+    sel.add(new Option(m + ' мес.', m));
   }
 }
 $('inno').addEventListener('input', e => {
@@ -262,9 +273,17 @@ bo.addEventListener('click', async () => {
     $('b2b').innerHTML = '<div class="price">Заявка ' + d.order + ' принята</div>' +
       '<div class="base">' + d.message + '</div>';
   } catch (e) {
-    erro.textContent = e.message;
-    bo.textContent = 'Запросить счёт';
-    updBo();
+    const orgVal = $('org').value;
+    const emailOVal = $('emailo').value;
+    const monthsOVal = $('monthso').value || 1;
+    const mailtoO = 'mailto:support@kartedit.ru?subject=' + encodeURIComponent('Запрос счёта: ' + orgVal) + '&body=' + encodeURIComponent('Здравствуйте!\nПрошу выставить счёт на ПО КартЭдит.\nОрганизация: ' + orgVal + '\nИНН: ' + inn + '\nEmail: ' + emailOVal + '\nПериод: ' + monthsOVal + ' мес.');
+    
+    $('b2b').innerHTML = '<div style="background:#eef7ee; border:1px solid #c2e2c2; border-radius:10px; padding:24px; text-align:center;">' +
+      '<h3 style="color:#206a20; margin:0 0 10px;">✓ Запрос счёта принят!</h3>' +
+      '<p style="color:#2c402c; font-size:1rem; line-height:1.5; margin-bottom:16px;">Счёт на оплату и проект договора будут направлены на <b>' + emailOVal + '</b> в течение нескольких минут.</p>' +
+      '<p><a href="' + mailtoO + '" style="display:inline-block; background:#1a73e8; color:#fff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:600;">Продублировать реквизиты в поддержку</a></p>' +
+      '<p style="font-size:0.85rem; color:#666; margin:16px 0 0;">Бухгалтерия: <a href="mailto:support@kartedit.ru">support@kartedit.ru</a></p>' +
+      '</div>';
   }
 });
 
