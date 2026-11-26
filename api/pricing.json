@@ -1,0 +1,10 @@
+{
+  "first_month_rub": 30000,
+  "per_month_rub": 30000,
+  "renewal_month_rub": 30000,
+  "max_months": 12,
+  "discount_pct": 0,
+  "promo_active": false,
+  "promo_until": null,
+  "offer_ver": "v8-2026-10-07"
+}
