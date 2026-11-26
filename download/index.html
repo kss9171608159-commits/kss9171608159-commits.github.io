@@ -3,24 +3,73 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Скачивание КартЭдит</title>
+<title>Скачивание КартЭдит 1.0.5 — бесплатный доступ до 20 декабря</title>
 <meta http-equiv="refresh" content="1; url=/KartEdit_Setup_1.0.5.exe">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b1626; color: #e7edf6; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-  .box { background: #12223a; padding: 40px; border-radius: 16px; border: 1px solid #1c2c44; max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-  h1 { font-size: 1.5rem; margin-bottom: 12px; color: #fff; }
-  p { color: #8a9bb8; line-height: 1.5; margin-bottom: 24px; }
-  .btn { display: inline-block; background: #f0b44c; color: #070f1c; font-weight: 700; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-size: 1.05rem; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    background: #0b1626; color: #e7edf6; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  }
+  .box {
+    background: #12223a; padding: 34px 30px; border-radius: 16px;
+    border: 1px solid #223858; max-width: 560px; width: 100%;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 10px; color: #fff; text-align: center; }
+  .lead { color: #b5c4da; line-height: 1.55; margin: 0 0 20px; text-align: center; font-size: 0.98rem; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 22px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #f0b44c; color: #070f1c; font-weight: 700; padding: 13px 22px;
+    border-radius: 10px; text-decoration: none; font-size: 0.98rem; border: 0; cursor: pointer;
+  }
   .btn:hover { background: #ffd175; }
-  .back { display: block; margin-top: 20px; color: #3d8bfd; text-decoration: none; font-size: 0.95rem; }
+  .btn.sec { background: #1d3252; color: #dce8f8; border: 1px solid #304b75; font-weight: 600; }
+  .btn.sec:hover { background: #26416b; }
+  .guide {
+    background: #0d192c; border: 1px solid rgba(240, 180, 76, 0.35);
+    border-radius: 12px; padding: 18px 20px; text-align: left;
+  }
+  .guide h2 { margin: 0 0 10px; font-size: 1.02rem; color: #f0b44c; }
+  .guide ol { margin: 0; padding-left: 20px; color: #d5e0ef; line-height: 1.55; font-size: 0.93rem; }
+  .guide li { margin-bottom: 6px; }
+  .guide a { color: #79b8ff; }
+  .copy-note { font-size: 0.85rem; color: #2fc29b; min-height: 1.2em; margin-top: 8px; text-align: center; }
+  .foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 18px; font-size: 0.88rem; }
+  .foot a { color: #79b8ff; text-decoration: none; }
+  .foot a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>Скачивание КартЭдит</h1>
-  <p>Загрузка дистрибутива версии 1.0.5 (31 МБ) начнется через секунду...</p>
-  <a class="btn" href="/KartEdit_Setup_1.0.5.exe" download>Скачать напрямую (.exe)</a>
-  <a class="back" href="/">← Вернуться на главную</a>
+  <h1>Скачивание КартЭдит 1.0.5</h1>
+  <p class="lead">Загрузка установщика для Windows 10/11 x64 (30,3&nbsp;МБ) начнётся автоматически через секунду.</p>
+
+  <div class="actions">
+    <a class="btn" href="/KartEdit_Setup_1.0.5.exe" download>Скачать напрямую (.exe)</a>
+    <a class="btn sec" href="/checksum">Проверить SHA-256</a>
+  </div>
+
+  <div class="guide">
+    <h2>Как включить бесплатный полный доступ до 20 декабря</h2>
+    <ol>
+      <li>Запустите <b>KartEdit_Setup_1.0.5.exe</b> (установка занимает минуту без прав администратора; сразу доступно 7 дней офлайн-знакомства).</li>
+      <li>В окне КартЭдит нажмите бейдж лицензии в правом верхнем углу → <b>«Активация»</b> → кликните <b>«Код компьютера»</b> (он скопируется в буфер).</li>
+      <li>Пришлите этот код на <a href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D1%8B%D0%B9%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">support@kartedit.ru</a> — вышлем ключ полной версии бесплатно до 20.12.2026.</li>
+    </ol>
+    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" class="btn sec" style="padding:8px 14px; font-size:0.88rem;" onclick="navigator.clipboard.writeText('support@kartedit.ru').then(()=>{document.getElementById('cp').textContent='Адрес support@kartedit.ru скопирован';})">Скопировать support@kartedit.ru</button>
+      <a class="btn sec" style="padding:8px 14px; font-size:0.88rem;" href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D1%8B%D0%B9%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">Отправить код на почту</a>
+    </div>
+    <div class="copy-note" id="cp"></div>
+  </div>
+
+  <div class="foot">
+    <a href="/">← Вернуться на главную</a>
+    <a href="/pay">Оформление счёта и лицензии →</a>
+  </div>
 </div>
 </body>
 </html>
