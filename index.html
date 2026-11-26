@@ -343,7 +343,7 @@
   /* Смена темы через View Transitions: круг от кнопки */
   ::view-transition-old(root), ::view-transition-new(root) { animation:none; mix-blend-mode:normal; }
 
-  /* ---------- Дизайнерский промо-баннер (Акция: 1 месяц бесплатно) ---------- */
+  /* ---------- Дизайнерский промо-баннер (Акция: Бесплатный доступ до 20 декабря) ---------- */
   .promo-banner {
     margin: 32px 0 0;
     background: linear-gradient(135deg, rgba(20, 38, 66, 0.9) 0%, rgba(11, 22, 38, 0.96) 100%);
@@ -399,6 +399,47 @@
     margin: 0 0 8px;
     letter-spacing: -0.01em;
     line-height: 1.3;
+  }
+  .promo-countdown {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 16px;
+  }
+  .promo-cd-label {
+    font-size: 0.85rem;
+    color: #a4b6cf;
+    margin-right: 4px;
+  }
+  .promo-cd-grid {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .promo-cd-box {
+    min-width: 56px;
+    padding: 7px 10px;
+    border-radius: var(--r-sm);
+    background: rgba(240, 180, 76, 0.1);
+    border: 1px solid rgba(240, 180, 76, 0.32);
+    text-align: center;
+    line-height: 1.15;
+  }
+  .promo-cd-val {
+    display: block;
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .promo-cd-unit {
+    display: block;
+    font-size: 0.7rem;
+    color: #a4b6cf;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
   }
   .promo-desc {
     color: #a4b6cf;
@@ -685,18 +726,27 @@
         <a class="btn ghost mag" href="/download"><svg><use href="#i-down"/></svg> Скачать: 7 дней бесплатно</a>
       </div>
 
-      <!-- ========== ДИЗАЙНЕРСКИЙ БАННЕР АКЦИИ: 1 МЕСЯЦ БЕСПЛАТНО ========== -->
+      <!-- ========== ДИЗАЙНЕРСКИЙ БАННЕР АКЦИИ: БЕСПЛАТНЫЙ ДОСТУП ДО 20 ДЕКАБРЯ ========== -->
       <div class="promo-banner" id="promo-trial">
         <div class="promo-tag">
           <span class="promo-dot"></span>
-          <span>Специальное предложение · Расширенный тест-драйв</span>
+          <span>Специальное предложение · До 20 декабря</span>
         </div>
-        <h2 class="promo-h">1 месяц полного доступа в подарок</h2>
+        <h2 class="promo-h">Бесплатный доступ до 20 декабря</h2>
+        <div class="promo-countdown" id="promo-countdown" aria-live="polite">
+          <span class="promo-cd-label">До конца акции:</span>
+          <div class="promo-cd-grid">
+            <div class="promo-cd-box"><span class="promo-cd-val" id="cd-days">--</span><span class="promo-cd-unit">дней</span></div>
+            <div class="promo-cd-box"><span class="promo-cd-val" id="cd-hours">--</span><span class="promo-cd-unit">часов</span></div>
+            <div class="promo-cd-box"><span class="promo-cd-val" id="cd-mins">--</span><span class="promo-cd-unit">минут</span></div>
+            <div class="promo-cd-box"><span class="promo-cd-val" id="cd-secs">--</span><span class="promo-cd-unit">секунд</span></div>
+          </div>
+        </div>
         <p class="promo-desc">
           Оцените все возможности КартЭдит в реальной работе без ограничений. 
           После установки отправьте свой «Код компьютера» на 
-          <a href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%D0%B0%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D1%80%D0%B0%D1%81%D1%88%D0%B8%D1%80%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">support@kartedit.ru</a>
-          — мы активируем полнофункциональную версию на <b>30 дней бесплатно</b>.
+          <a href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D1%8B%D0%B9%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">support@kartedit.ru</a>
+          — мы активируем полнофункциональную версию <b>бесплатно до 20 декабря</b>.
         </p>
         <div class="promo-steps">
           <div class="p-step">
@@ -709,7 +759,7 @@
           </div>
           <div class="p-step">
             <span class="p-num">3</span>
-            <span class="p-txt"><b>Отправьте</b> нам на почту и получите ключ на 30 дней</span>
+            <span class="p-txt"><b>Отправьте</b> нам на почту и получите ключ до 20 декабря</span>
           </div>
         </div>
         <div class="promo-actions">
@@ -717,7 +767,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Скачать КартЭдит
           </a>
-          <a class="promo-btn-sec" href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%D0%B0%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D1%80%D0%B0%D1%81%D1%88%D0%B8%D1%80%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9%20%D0%BF%D0%B5%D1%80%D0%B8%D0%BE%D0%B4%20%D0%BD%D0%B0%201%20%D0%BC%D0%B5%D1%81%D1%8F%D1%86.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">
+          <a class="promo-btn-sec" href="mailto:support@kartedit.ru?subject=%D0%97%D0%B0%D0%BF%D1%80%D0%BE%D1%81%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F&body=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%0A%D0%9F%D1%80%D0%BE%D1%88%D1%83%20%D0%BF%D1%80%D0%B5%D0%B4%D0%BE%D1%81%D1%82%D0%B0%D0%B2%D0%B8%D1%82%D1%8C%20%D0%B1%D0%B5%D1%81%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D1%8B%D0%B9%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%20%D0%B4%D0%BE%2020%20%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8F.%0A%D0%9C%D0%BE%D0%B9%20%D0%BA%D0%BE%D0%B4%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%B0%20(HWID):%20">
             ✉ Отправить код на support@kartedit.ru &rarr;
           </a>
         </div>
@@ -1366,6 +1416,31 @@ window.KE = { signal: function () {
     fetch("/api/version").then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
       if (v && v.version) document.getElementById("ver").textContent = v.version;
     }).catch(function () {});
+  }
+
+  // Обратный отсчёт до 20 декабря 2026 (23:59:59 МСК).
+  var cdEl = document.getElementById("promo-countdown");
+  if (cdEl) {
+    var targetMs = Date.parse("2026-12-20T23:59:59+03:00");
+    var dEl = document.getElementById("cd-days"),
+        hEl = document.getElementById("cd-hours"),
+        mEl = document.getElementById("cd-mins"),
+        sEl = document.getElementById("cd-secs");
+    function pad2(n) { return n < 10 ? "0" + n : String(n); }
+    function tickPromo() {
+      var diff = Math.max(0, targetMs - Date.now());
+      var totalSec = Math.floor(diff / 1000);
+      var days = Math.floor(totalSec / 86400);
+      var hours = Math.floor((totalSec % 86400) / 3600);
+      var mins = Math.floor((totalSec % 3600) / 60);
+      var secs = totalSec % 60;
+      dEl.textContent = String(days);
+      hEl.textContent = pad2(hours);
+      mEl.textContent = pad2(mins);
+      sEl.textContent = pad2(secs);
+    }
+    tickPromo();
+    setInterval(tickPromo, 1000);
   }
 })();
 </script>
